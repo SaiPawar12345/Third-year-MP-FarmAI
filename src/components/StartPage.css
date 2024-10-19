@@ -1,0 +1,134 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+  
+  .header {
+    background-color: #8BC34A; /* Light green header */
+    color: #ffffff;
+    padding: 10px;
+    text-align: center;
+    position: fixed; /* Keep the header at the top */
+    width: 100%;
+    top: 0;
+    z-index: 1000; /* Ensure it stays above other content */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 0;
+  }
+  
+  .header .btn {
+    background: linear-gradient(90deg, #34C759, #228B22);
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background-color 0.3s ease-in-out, transform 0.2s;
+    margin-left: 10px; /* Increased margin between buttons */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    margin-right: 20px; /* Added margin between button and margin */
+  }
+  
+  .header .btn:hover {
+    background: linear-gradient(90deg, #34C759, #1B4D3E);
+    transform: scale(1.05);
+  }
+  
+  .header .btn:active {
+    background: linear-gradient(90deg, #1B4D3E, #34C759);
+    transform: scale(0.95);
+  }
+  
+  .start-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin-top: 60px; /* Add margin to avoid overlap with the header */
+    background-image: url('D:\PROJECT\farm-simulator\public\assets\bg.jpg');
+    background-size: cover; /* Cover the entire area */
+    background-position: center;
+  }
+  
+  .text-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+    animation: fadeIn 2s ease-in; /* Slowed down animation */
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  .text-container .text-box {
+    background: rgba(255, 255, 255, 0.4); /* Increased transparency */
+    padding: 20px;
+    margin: 20px;
+    width: 300px;
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    animation: slideIn 1s ease-in-out; /* Slowed down animation */
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .text-container .text-box h2 {
+    font-size: 28px; /* Increased font size */
+    font-weight: 700; /* Increased font weight */
+    margin-bottom: 10px;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); /* Added text shadow */
+  }
+  
+  .text-container .text-box p {
+    font-size: 20px; /* Increased font size */
+    font-weight: 500; /* Increased font weight */
+    margin-bottom: 20px;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); /* Added text shadow */
+  }
+  
+  /* New content for fertilizers and permaculture */
+  .text-box:nth-child(3) h2 {
+    content: "Fertilizer Recommendations";
+  }
+  
+  .text-box:nth-child(3) p {
+    content: "Get personalized fertilizer recommendations based on your crop type and soil health.";
+  }
+  
+  .text-box:nth-child(4) h2 {
+    content: "Permaculture Farming";
+  }
+  
+  .text-box:nth-child(4) p {
+    content: "Learn about permaculture practices that enhance sustainability and biodiversity on your farm.";
+  }

@@ -1,0 +1,96 @@
+/* Container for both the map and info sections */
+.container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Map Section (70%) */
+.map-section {
+  width: 70%;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.map-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.map-container {
+  flex-grow: 1;
+  position: relative;
+}
+
+/* Information Section (30%) */
+.info-section {
+  width: 30%;
+  background-color: #f1f1f1;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  margin-left: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.info-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.info-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: 18px;
+  color: #4a4a4a;
+  margin-bottom: 8px;
+}
+
+.point-preview {
+  background-color: #ffffff;
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+}
+
+.bounds-display {
+  background-color: #ffffff;
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+.no-point-msg {
+  text-align: center;
+  padding-top: 50%;
+  color: #888;
+  font-size: 16px;
+}
+
+/* Ensure the z-index for drawing controls is set */
+.leaflet-control-container {
+  z-index: 1000; /* Ensure controls are on top */
+}
+
+/* Add the following to make sure the controls appear above everything else */
+.leaflet-draw {
+  z-index: 1000;
+}

@@ -1,0 +1,17 @@
+Crop,Row Spacing (cm),Crop Spacing Within Row (cm),Sprinkler Placement X (m),Sprinkler Placement Y (m)
+Wheat,20,5,4,4
+Peas,30,7,5,5
+Corn,70,20,6,6
+Tomatoes,60,40,6,6
+Carrots,20,5,4,4
+Potatoes,75,25,5,5
+Lettuce,30,20,5,5
+Spinach,25,10,4,4
+Cabbage,60,50,6,6
+Onions,15,7,4,4
+Beans,30,10,5,5
+Rice,20,10,4,4
+Barley,15,5,4,4
+Soybeans,35,10,5,5
+Strawberries,30,25,5,5
+Sunflowers,70,30,6,6
