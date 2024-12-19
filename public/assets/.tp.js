@@ -43,13 +43,15 @@ const Maps = () => {
     loadGeoJSON();
   }, []);
 
+  // Effect to save data whenever weather or soil information updates
+  useEffect(() => {
+    if (weatherInfo && soilData && selectedRegion.length > 0) {
+      saveToLocalStorage();
+    }
+  }, [weatherInfo, soilData, selectedRegion]);
+
   // Save data to local storage
   const saveToLocalStorage = () => {
-    console.log('Preparing to save data to localStorage...');
-    console.log('Current selectedRegion:', selectedRegion);
-    console.log('Current weatherInfo:', weatherInfo);
-    console.log('Current soilData:', soilData);
-
     const dataToStore = {
       polygonPoints: selectedRegion,
       weatherInfo,
@@ -71,79 +73,26 @@ const Maps = () => {
       });
     }
   };
+
   // Load data from local storage
   useEffect(() => {
-    console.log('Attempting to load saved data from localStorage...');
-    try {
-      const savedData = localStorage.getItem('mapData');
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        console.log('Successfully loaded data from localStorage:', parsedData);
-        setSelectedRegion(parsedData.polygonPoints || []);
-        setWeatherInfo(parsedData.weatherInfo || null);
-        setSoilData(parsedData.soilData || { sand: null, silt: null, clay: null, ph: null });
-      } else {
-        console.log('No saved data found in localStorage');
-      }
-    } catch (error) {
-      console.error('Error loading data from localStorage:', error);
-    }
-  }, []);
-
-  // Set up Leaflet map with drawing tools
-  useEffect(() => {
-    const map = mapRef.current;
-
-    if (map) {
-      const drawnItemsGroup = new L.FeatureGroup();
-      map.addLayer(drawnItemsGroup);
-
-      const drawControl = new L.Control.Draw({
-        edit: {
-          featureGroup: drawnItemsGroup,
-        },
-        draw: {
-          polygon: true,
-          rectangle: true,
-          polyline: false,
-          circle: false,
-          marker: false,
-        },
-      });
-
-      map.on(L.Draw.Event.CREATED, async (e) => {
-        drawnItemsGroup.clearLayers();
-        const layer = e.layer;
-        drawnItemsGroup.addLayer(layer);
-
-        if (e.layerType === 'polygon' || e.layerType === 'rectangle') {
-          const latlngs = layer.getLatLngs();
-          const flattenedLatLngs = Array.isArray(latlngs[0]) ? latlngs.flat() : latlngs;
-          setSelectedRegion(flattenedLatLngs);
-
-          // Fetch data and update state
-          await Promise.all([
-            fetchWeatherData(flattenedLatLngs),
-            fetchSoilData(flattenedLatLngs)
-          ]);
-
-          // Save all data to localStorage after both API calls complete
-          saveToLocalStorage();
+    const loadSavedData = () => {
+      try {
+        const savedData = localStorage.getItem('mapData');
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          if (parsedData.polygonPoints) setSelectedRegion(parsedData.polygonPoints);
+          if (parsedData.weatherInfo) setWeatherInfo(parsedData.weatherInfo);
+          if (parsedData.soilData) setSoilData(parsedData.soilData);
+          console.log('Successfully loaded data from localStorage:', parsedData);
         }
-      });
-
-      if (showDrawTools) {
-        map.addControl(drawControl);
-      } else {
-        map.removeControl(drawControl);
+      } catch (error) {
+        console.error('Error loading data from localStorage:', error);
       }
+    };
 
-      return () => {
-        map.removeLayer(drawnItemsGroup);
-        map.removeControl(drawControl);
-      };
-    }
-  }, [showDrawTools]);
+    loadSavedData();
+  }, []);
 
   // Fetch weather data
   const fetchWeatherData = async (latlngs) => {
@@ -159,10 +108,8 @@ const Maps = () => {
           windSpeed: data.current.wind_kph,
         };
         setWeatherInfo(fetchedWeather);
-        return fetchedWeather;
       } catch (error) {
         console.error('Error fetching weather data:', error);
-        return null;
       }
     }
   };
@@ -197,21 +144,70 @@ const Maps = () => {
         };
 
         setSoilData(updatedSoilData);
-        return updatedSoilData;
       } catch (error) {
         console.error('Error fetching soil data:', error);
-        return null;
       }
     }
   };
 
-  // Rest of your component remains the same...
+  // Set up Leaflet map with drawing tools
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (map) {
+      const drawnItemsGroup = new L.FeatureGroup();
+      map.addLayer(drawnItemsGroup);
+
+      const drawControl = new L.Control.Draw({
+        edit: {
+          featureGroup: drawnItemsGroup,
+        },
+        draw: {
+          polygon: true,
+          rectangle: true,
+          polyline: false,
+          circle: false,
+          marker: false,
+        },
+      });
+
+      map.on(L.Draw.Event.CREATED, async (e) => {
+        drawnItemsGroup.clearLayers();
+        const layer = e.layer;
+        drawnItemsGroup.addLayer(layer);
+
+        if (e.layerType === 'polygon' || e.layerType === 'rectangle') {
+          const latlngs = layer.getLatLngs();
+          const flattenedLatLngs = Array.isArray(latlngs[0]) ? latlngs.flat() : latlngs;
+          setSelectedRegion(flattenedLatLngs);
+
+          // Fetch both weather and soil data
+          await Promise.all([
+            fetchWeatherData(flattenedLatLngs),
+            fetchSoilData(flattenedLatLngs)
+          ]);
+        }
+      });
+
+      if (showDrawTools) {
+        map.addControl(drawControl);
+      } else {
+        map.removeControl(drawControl);
+      }
+
+      return () => {
+        map.removeLayer(drawnItemsGroup);
+        map.removeControl(drawControl);
+      };
+    }
+  }, [showDrawTools]);
+
   const handleMapToggle = () => {
-    setUseGeoMap((prevUseGeoMap) => !prevUseGeoMap);
+    setUseGeoMap((prev) => !prev);
   };
 
   const handleGeoJSONToggle = () => {
-    setShowGeoJSON((prevShowGeoJSON) => !prevShowGeoJSON);
+    setShowGeoJSON((prev) => !prev);
   };
 
   return (

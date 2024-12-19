@@ -1,134 +1,1110 @@
+/* Base styles */
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Navbar styles */
+.header {
+  background-color: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 1rem 0;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  width: 100%;
+}
+
+/* Button styles */
+.btn-primary {
+  background: linear-gradient(90deg, #34C759, #228B22);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-block;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(52, 199, 89, 0.2);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(52, 199, 89, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-block;
+  text-align: center;
+  border: 2px solid white;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-login {
+  color: #228B22;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-block;
+  text-align: center;
+  border: 2px solid #228B22;
+  border-radius: 8px;
+}
+
+.btn-login:hover {
+  background: rgba(34, 139, 34, 0.1);
+}
+
+/* Hero section */
+.section-slide-right {
+  position: relative;
+  overflow: hidden;
+}
+
+.slide-in-left {
+  animation: slideInLeft 1s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
   }
-  
-  .header {
-    background-color: #8BC34A; /* Light green header */
-    color: #ffffff;
-    padding: 10px;
-    text-align: center;
-    position: fixed; /* Keep the header at the top */
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Features section */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 2rem 0;
+}
+
+.feature-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.feature-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  color: #34C759;
+}
+
+/* Benefits section */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  padding: 2rem 0;
+}
+
+.benefit-card {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.benefit-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+
+  .features-grid,
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-primary,
+  .btn-secondary {
     width: 100%;
-    top: 0;
-    z-index: 1000; /* Ensure it stays above other content */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin-bottom: 1rem;
   }
-  
-  .header h1 {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 0;
+}
+
+/* Text animations */
+.animate-text {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s ease-out;
+}
+
+.animate-text.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Primary color */
+.text-primary {
+  color: #228B22;
+}
+
+/* StartPage specific styles */
+.start-page-container {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+.start-page-header {
+  background-color: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 1rem 0;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+}
+
+.start-page-nav {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.start-page-logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.start-page-logo h1 {
+  color: #228B22;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.start-page-nav-links {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.start-page-nav-link {
+  color: #4a5568;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.start-page-nav-link:hover {
+  color: #228B22;
+}
+
+.start-page-auth-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.start-page-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.start-page-btn-primary {
+  background: linear-gradient(90deg, #34C759, #228B22);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 6px rgba(52, 199, 89, 0.2);
+}
+
+.start-page-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(52, 199, 89, 0.3);
+}
+
+.start-page-btn-secondary {
+  background: transparent;
+  color: #228B22;
+  border: 2px solid #228B22;
+}
+
+.start-page-btn-secondary:hover {
+  background: rgba(34, 139, 34, 0.1);
+  transform: translateY(-2px);
+}
+
+.start-page-hero {
+  min-height: calc(100vh - 4rem);
+  margin-top: 4rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=2340&q=80');
+  background-size: cover;
+  background-position: center;
+  padding: 4rem 2rem;
+}
+
+.start-page-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.4));
+}
+
+.start-page-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  color: white;
+}
+
+.start-page-hero-title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+  color: white;
+}
+
+.start-page-hero-description {
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+  max-width: 600px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.start-page-hero-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.start-page-features {
+  padding: 6rem 2rem;
+  background: white;
+  position: relative;
+}
+
+.start-page-features-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.start-page-features-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.start-page-features-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 1rem;
+}
+
+.start-page-features-description {
+  font-size: 1.25rem;
+  color: #4a5568;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.start-page-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.start-page-feature-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.start-page-feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.start-page-feature-icon {
+  color: #228B22;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.start-page-feature-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.start-page-feature-description {
+  color: #4a5568;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.start-page-benefits {
+  padding: 6rem 2rem;
+  background: linear-gradient(135deg, #34C759, #228B22);
+  position: relative;
+  color: white;
+}
+
+.start-page-benefits-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.start-page-benefits-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.start-page-benefits-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.start-page-benefits-description {
+  font-size: 1.25rem;
+  max-width: 800px;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.start-page-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.start-page-benefit-card {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 1rem;
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease;
+  text-align: center;
+}
+
+.start-page-benefit-card:hover {
+  transform: translateY(-5px);
+}
+
+.start-page-benefit-number {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.start-page-benefit-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.start-page-benefit-description {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
+.start-page-testimonials {
+  padding: 6rem 2rem;
+  background: #f7fafc;
+  position: relative;
+}
+
+.start-page-testimonials-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.start-page-testimonials-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.start-page-testimonials-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 1rem;
+}
+
+.start-page-testimonials-description {
+  font-size: 1.25rem;
+  color: #4a5568;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.start-page-testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.start-page-testimonial-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.start-page-testimonial-card:hover {
+  transform: translateY(-5px);
+}
+
+.start-page-testimonial-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.start-page-testimonial-image {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.start-page-testimonial-info {
+  flex: 1;
+}
+
+.start-page-testimonial-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.start-page-testimonial-role {
+  color: #4a5568;
+}
+
+.start-page-testimonial-quote {
+  color: #4a5568;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.start-page-footer {
+  background: #1a202c;
+  color: white;
+  padding: 6rem 2rem 2rem;
+}
+
+.start-page-footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.start-page-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 4rem;
+  margin-bottom: 4rem;
+}
+
+.start-page-footer-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: white;
+}
+
+.start-page-footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.start-page-footer-link {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  display: block;
+  margin-bottom: 0.75rem;
+  transition: color 0.3s ease;
+}
+
+.start-page-footer-link:hover {
+  color: white;
+}
+
+.start-page-footer-text {
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+}
+
+.start-page-footer-copyright {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .start-page-hero-title {
+    font-size: 3rem;
   }
-  
-  .header .btn {
-    background: linear-gradient(90deg, #34C759, #228B22);
-    color: #ffffff;
-    border: none;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    border-radius: 10px;
-    transition: background-color 0.3s ease-in-out, transform 0.2s;
-    margin-left: 10px; /* Increased margin between buttons */
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-    margin-right: 20px; /* Added margin between button and margin */
+}
+
+@media (max-width: 768px) {
+  .start-page-nav-links {
+    display: none;
   }
-  
-  .header .btn:hover {
-    background: linear-gradient(90deg, #34C759, #1B4D3E);
-    transform: scale(1.05);
+
+  .start-page-hero-title {
+    font-size: 2.5rem;
   }
-  
-  .header .btn:active {
-    background: linear-gradient(90deg, #1B4D3E, #34C759);
-    transform: scale(0.95);
+
+  .start-page-hero-description {
+    font-size: 1.125rem;
   }
-  
-  .start-page {
-    display: flex;
+
+  .start-page-hero-buttons {
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin-top: 60px; /* Add margin to avoid overlap with the header */
-    background-image: url('D:\PROJECT\farm-simulator\public\assets\bg.jpg');
-    background-size: cover; /* Cover the entire area */
-    background-position: center;
   }
-  
-  .text-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 20px;
-    animation: fadeIn 2s ease-in; /* Slowed down animation */
+
+  .start-page-btn {
+    width: 100%;
+    text-align: center;
   }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+
+  .start-page-features,
+  .start-page-benefits,
+  .start-page-testimonials {
+    padding: 4rem 1rem;
   }
-  
-  .text-container .text-box {
-    background: rgba(255, 255, 255, 0.4); /* Increased transparency */
-    padding: 20px;
-    margin: 20px;
-    width: 300px;
-    height: 300px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
-    animation: slideIn 1s ease-in-out; /* Slowed down animation */
+
+  .start-page-features-title,
+  .start-page-benefits-title,
+  .start-page-testimonials-title {
+    font-size: 2rem;
   }
-  
-  @keyframes slideIn {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+}
+
+@media (max-width: 480px) {
+  .start-page-hero-title {
+    font-size: 2rem;
   }
-  
-  .text-container .text-box h2 {
-    font-size: 28px; /* Increased font size */
-    font-weight: 700; /* Increased font weight */
-    margin-bottom: 10px;
-    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); /* Added text shadow */
+
+  .start-page-nav {
+    padding: 0 1rem;
   }
-  
-  .text-container .text-box p {
-    font-size: 20px; /* Increased font size */
-    font-weight: 500; /* Increased font weight */
-    margin-bottom: 20px;
-    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); /* Added text shadow */
+
+  .start-page-logo h1 {
+    font-size: 1.25rem;
   }
-  
-  /* New content for fertilizers and permaculture */
-  .text-box:nth-child(3) h2 {
-    content: "Fertilizer Recommendations";
+
+  .start-page-feature-card,
+  .start-page-benefit-card,
+  .start-page-testimonial-card {
+    padding: 1.5rem;
   }
-  
-  .text-box:nth-child(3) p {
-    content: "Get personalized fertilizer recommendations based on your crop type and soil health.";
+}
+
+/* Start Page */
+.start-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin-top: 60px;
+  background-image: url('bg.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.text-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+  animation: fadeIn 2s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
   }
-  
-  .text-box:nth-child(4) h2 {
-    content: "Permaculture Farming";
+  to {
+    opacity: 1;
   }
-  
-  .text-box:nth-child(4) p {
-    content: "Learn about permaculture practices that enhance sustainability and biodiversity on your farm.";
+}
+
+.text-container .text-box {
+  background: rgba(255, 255, 255, 0.4);
+  padding: 20px;
+  margin: 20px;
+  width: 300px;
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+  animation: slideIn 1s ease-in-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
   }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.text-container .text-box h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.text-container .text-box p {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* New content for fertilizers and permaculture */
+.text-box:nth-child(3) h2 {
+  content: "Fertilizer Recommendations";
+}
+
+.text-box:nth-child(3) p {
+  content: "Get personalized fertilizer recommendations based on your crop type and soil health.";
+}
+
+.text-box:nth-child(4) h2 {
+  content: "Permaculture Farming";
+}
+
+.text-box:nth-child(4) p {
+  content: "Learn about permaculture practices that enhance sustainability and biodiversity on your farm.";
+}
+
+/* Common styles for all sections */
+.start-page-section-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.start-page-section-header {
+  text-align: center;
+  margin-bottom: 4rem;
+  max-width: 800px;
+  margin: 0 auto 4rem;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.start-page-section-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: #228B22;
+  border-radius: 2px;
+}
+
+.start-page-section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: inherit;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.start-page-section-subtitle {
+  font-size: 1.25rem;
+  color: inherit;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Features Section */
+.start-page-features {
+  padding: 6rem 0;
+  background: #f8fafc;
+}
+
+.start-page-features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  margin-top: 3rem;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.start-page-feature-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.start-page-feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #34C759, #228B22);
+}
+
+.start-page-feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.start-page-feature-icon {
+  color: #228B22;
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
+  height: 48px;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 139, 34, 0.1);
+  border-radius: 50%;
+}
+
+.start-page-feature-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.start-page-feature-description {
+  color: #4a5568;
+  text-align: center;
+  line-height: 1.5;
+  font-size: 0.875rem;
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+/* Benefits Section */
+.start-page-benefits {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, #34C759, #228B22);
+  color: white;
+}
+
+.start-page-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  margin-top: 3rem;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.start-page-benefit-card {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 1rem;
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.start-page-benefit-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.start-page-benefit-card:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.start-page-benefit-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.start-page-benefit-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: white;
+}
+
+.start-page-benefit-description {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  font-size: 0.875rem;
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+/* Testimonials Section */
+.start-page-testimonials {
+  padding: 6rem 0;
+  background: #f8fafc;
+}
+
+.start-page-testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  margin-top: 3rem;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.start-page-testimonial-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.start-page-testimonial-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #34C759, #228B22);
+}
+
+.start-page-testimonial-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.start-page-testimonial-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.start-page-testimonial-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #228B22;
+}
+
+.start-page-testimonial-info {
+  flex: 1;
+}
+
+.start-page-testimonial-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0;
+}
+
+.start-page-testimonial-role {
+  color: #4a5568;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.start-page-testimonial-quote {
+  color: #4a5568;
+  line-height: 1.5;
+  font-style: italic;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.start-page-testimonial-quote::before {
+  content: '"';
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 2rem;
+  color: #228B22;
+  line-height: 1;
+  opacity: 0.5;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .start-page-features-grid,
+  .start-page-benefits-grid,
+  .start-page-testimonials-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 700px;
+  }
+}
+
+@media (max-width: 768px) {
+  .start-page-features-grid,
+  .start-page-benefits-grid,
+  .start-page-testimonials-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .start-page-feature-card,
+  .start-page-benefit-card,
+  .start-page-testimonial-card {
+    padding: 1.5rem;
+  }
+
+  .start-page-section-container {
+    padding: 0 1rem;
+  }
+
+  .start-page-section-title {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .start-page-features-grid,
+  .start-page-benefits-grid,
+  .start-page-testimonials-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .start-page-feature-card,
+  .start-page-benefit-card,
+  .start-page-testimonial-card {
+    padding: 1.25rem;
+  }
+
+  .start-page-section-title {
+    font-size: 1.75rem;
+  }
+
+  .start-page-feature-icon,
+  .start-page-testimonial-image {
+    width: 40px;
+    height: 40px;
+  }
+
+  .start-page-benefit-number {
+    font-size: 2rem;
+  }
+}

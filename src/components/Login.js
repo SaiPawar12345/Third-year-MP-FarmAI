@@ -1,91 +1,204 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Login.css';
+import { FaEnvelope, FaLock, FaFacebookF, FaGoogle } from 'react-icons/fa';
+import { signInWithEmail, signInWithGoogle, signInWithFacebook, resetPassword } from '../firebase';
+import './Auth.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate(); // Initialize useNavigate
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate login process
-    if (email && password) {
-      // Redirect to dashboard after successful login
+    setError('');
+    setLoading(true);
+
+    try {
+      const { user, error } = await signInWithEmail(email, password);
+      if (error) {
+        setError(error);
+        return;
+      }
       navigate('/dashboard');
+    } catch (err) {
+      setError('Failed to sign in. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const { user, error } = await signInWithGoogle();
+      if (error) {
+        setError(error);
+        return;
+      }
+      navigate('/dashboard');
+    } catch (err) {
+      setError('Failed to sign in with Google. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const { user, error } = await signInWithFacebook();
+      if (error) {
+        setError(error);
+        return;
+      }
+      navigate('/dashboard');
+    } catch (err) {
+      setError('Failed to sign in with Facebook. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Please enter your email address first');
+      return;
+    }
+    try {
+      const { error } = await resetPassword(email);
+      if (error) {
+        setError(error);
+        return;
+      }
+      alert('Password reset email sent. Please check your inbox.');
+    } catch (err) {
+      setError('Failed to send password reset email. Please try again.');
     }
   };
 
   return (
-    <div className="container flex items-center justify-center min-h-screen">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-96">
-        <h2 className="text-2xl font-bold text-center mb-6">
-          Login
-        </h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700">
-              Email
-            </label>
-            <input
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 px-4 sm:px-6 lg:px-8 auth-form-container">
+      <div className="max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-6 sm:p-8 transform transition-all duration-500 hover:shadow-2xl auth-form">
+        <div className="text-center">
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Welcome Back!</h2>
+          <p className="text-sm text-gray-600">Please sign in to your account</p>
+          {error && (
+            <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+              {error}
+            </div>
+          )}
+        </div>
+        
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaEnvelope className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="email"
+                required
+                className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm transition-all duration-300 auth-input"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaLock className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="password"
+                required
+                className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm transition-all duration-300 auth-input"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
           </div>
-          <div className="mb-4 relative">
-            <label className="block text-gray-700">
-              Password
-            </label>
-            <input
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded cursor-pointer"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 cursor-pointer">
+                Remember me
+              </label>
+            </div>
+
+            <div className="text-sm">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="font-medium text-green-600 hover:text-green-500 transition-colors duration-300"
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
-          <div className="text-right mb-4">
-            <a className="text-green-500" href="#">
-              Forgot password?
-            </a>
-          </div>
+
           <button
-            className="w-full bg-green-500 text-white py-2 rounded-lg font-bold hover:bg-green-600 transition duration-300"
             type="submit"
+            disabled={loading}
+            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 transform hover:-translate-y-0.5 auth-button disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Login
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 social-button disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaGoogle className="h-5 w-5 text-red-500" />
+              <span className="ml-2">Google</span>
+            </button>
+            <button
+              onClick={handleFacebookSignIn}
+              disabled={loading}
+              className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 social-button disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaFacebookF className="h-5 w-5 text-blue-600" />
+              <span className="ml-2">Facebook</span>
+            </button>
+          </div>
+        </div>
+
         <div className="text-center mt-4">
-          <p className="text-gray-700">
-            Don't have an account?
-            <a className="text-green-500" href="#" onClick={() => navigate('/signup')}>
-              Signup
-            </a>
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <button
+              onClick={() => navigate('/signup')}
+              className="font-medium text-green-600 hover:text-green-500 transition-colors duration-300"
+            >
+              Sign up
+            </button>
           </p>
         </div>
-        <div className="flex items-center my-4">
-          <hr className="flex-grow border-gray-300" />
-          <span className="mx-2 text-gray-500">
-            Or
-          </span>
-          <hr className="flex-grow border-gray-300" />
-        </div>
-        <button
-          className="w-full bg-green-700 text-white py-2 rounded-lg font-bold hover:bg-green-800 transition duration-300 mb-2"
-        >
-          Login with Facebook
-        </button>
-        <button
-          className="w-full bg-white text-gray-700 border border-gray-300 py-2 rounded-lg font-bold hover:bg-gray-100 transition duration-300"
-        >
-          Login with Google
-        </button>
       </div>
     </div>
   );

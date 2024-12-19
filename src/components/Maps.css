@@ -1,3 +1,5 @@
+/* Maps.css */
+
 /* Container for both the map and info sections */
 .container {
   display: flex;
@@ -7,9 +9,9 @@
   box-sizing: border-box;
 }
 
-/* Map Section (70%) */
+/* Map Section */
 .map-section {
-  width: 70%;
+  width: 60%;
   background-color: #ffffff;
   padding: 20px;
   border-radius: 8px;
@@ -30,9 +32,9 @@
   position: relative;
 }
 
-/* Information Section (30%) */
+/* Information Section */
 .info-section {
-  width: 30%;
+  width: 40%;
   background-color: #f1f1f1;
   padding: 20px;
   border-radius: 8px;
@@ -43,54 +45,114 @@
   height: 100%;
 }
 
-.info-title {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 16px;
+.button-container {
+  display: flex;
+  justify-content: space-between; /* Space buttons evenly */
+  margin-bottom: 20px; /* Add margin below buttons */
 }
 
-.info-content {
-  flex-grow: 1;
+.toggle-draw-tools, .enter-button {
+  background: linear-gradient(to right, #34d399, #2dd4bf);
+  height: 48px;
+  width: 45%;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggle-draw-tools:hover, .enter-button:hover {
+  background: linear-gradient(to right, #2dd4bf, #34d399);
+}
+
+.selection-region {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
+  overflow-y: auto; /* Enable vertical scrolling */
+  max-height: 200px; /* Set a maximum height for the selection region */
+  padding: 10px; /* Add padding for better spacing */
+  border: 1px solid #d1d5db; /* Optional: add border for better visibility */
+  border-radius: 8px; /* Optional: rounding corners */
+  background-color: #f9f9f9; /* Optional: background color */
 }
 
-.info-label {
+.text-header {
   font-size: 18px;
-  color: #4a4a4a;
+  font-weight: bold;
   margin-bottom: 8px;
 }
 
-.point-preview {
-  background-color: #ffffff;
+
+.point-container {
+  background-color: #86efac; /* Light green color */
   padding: 12px;
-  border-radius: 4px;
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
-.bounds-display {
-  background-color: #ffffff;
-  padding: 12px;
-  border-radius: 4px;
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
-  overflow-y: auto;
-  max-height: 200px;
+.point-container .text-label {
+  font-weight: bold;
 }
 
-.no-point-msg {
+.text-box {
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 8px;
+  width: 60%; /* Adjust width */
   text-align: center;
-  padding-top: 50%;
-  color: #888;
-  font-size: 16px;
 }
 
-/* Ensure the z-index for drawing controls is set */
-.leaflet-control-container {
-  z-index: 1000; /* Ensure controls are on top */
+.weather-info {
+  margin-top: 20px;
 }
 
-/* Add the following to make sure the controls appear above everything else */
-.leaflet-draw {
-  z-index: 1000;
+.weather-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px; /* Space between weather items */
+}
+
+.weather-item {
+  background-color: #e5f6e0; /* Light green for weather info */
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex: 1; /* Allow weather items to grow and shrink */
+}
+
+.weather-item .text-label {
+  font-weight: bold;
+}
+
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .map-section, .info-section {
+    width: 100%; /* Full width on smaller screens */
+    margin-left: 0; /* Remove margin on smaller screens */
+  }
+
+  .button-container {
+    flex-direction: column; /* Stack buttons on top of each other */
+  }
+
+  .toggle-draw-tools, .enter-button {
+    width: 100%; /* Full width for buttons */
+    margin-bottom: 10px; /* Space between buttons */
+  }
 }
