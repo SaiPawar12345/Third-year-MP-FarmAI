@@ -33,7 +33,6 @@ const SOIL_API_URL = 'https://rest.isric.org/soilgrids/v2.0/properties/query';
 const Maps = () => {
   const [selectedPoints, setSelectedPoints] = useState([]);
   const [selectedRegion, setSelectedRegion] = useState([]);
-  const [pointsData, setPointsData] = useState(new Map()); // Store data for each point
   const [lastSelectedPoint, setLastSelectedPoint] = useState(null);
   const [selectedPointInfo, setSelectedPointInfo] = useState(null);
   const [showDrawTools, setShowDrawTools] = useState(false);
@@ -57,20 +56,6 @@ const Maps = () => {
           setSelectedRegion(parsedData.points.map(point => point.location));
         }
         
-        // Convert saved points to Map
-        const newPointsData = new Map();
-        parsedData.points.forEach(point => {
-          const key = `${point.location[0]},${point.location[1]}`;
-          if (point.soil && point.weather) {
-            newPointsData.set(key, {
-              location: point.location,
-              soil: point.soil,
-              weather: point.weather
-            });
-          }
-        });
-        setPointsData(newPointsData);
-        
         // Load last selected point if it exists
         if (parsedData.lastSelectedPoint) {
           setLastSelectedPoint(parsedData.lastSelectedPoint);
@@ -87,28 +72,45 @@ const Maps = () => {
   }, []);
 
   const saveToLocalStorage = () => {
-    if (selectedRegion.length === 0 || pointsData.size === 0) return;
+    if (selectedRegion.length === 0) return;
 
     try {
-      const pointsArray = selectedRegion.map(point => {
-        const key = `${point[0]},${point[1]}`;
-        const pointInfo = pointsData.get(key);
-        
-        return {
-          location: point,
-          soil: pointInfo?.soil || { sand: 0, silt: 0, clay: 0, ph: 0 },
-          weather: pointInfo?.weather || null
-        };
+      const pointsData = selectedRegion.map(point => {
+        // Find the corresponding point info
+        const pointInfo = selectedPointInfo && 
+          selectedPointInfo.location[0] === point[0] && 
+          selectedPointInfo.location[1] === point[1] 
+          ? selectedPointInfo 
+          : lastSelectedPoint && 
+            lastSelectedPoint.location[0] === point[0] && 
+            lastSelectedPoint.location[1] === point[1]
+          ? lastSelectedPoint
+          : null;
+
+        // Only save if we have real data from API
+        if (pointInfo && pointInfo.soil && pointInfo.weather) {
+          return {
+            location: point,
+            soil: pointInfo.soil,
+            weather: pointInfo.weather
+          };
+        } else {
+          return {
+            location: point,
+            soil: { sand: 0, silt: 0, clay: 0, ph: 0 },
+            weather: null
+          };
+        }
       });
 
       const dataToSave = {
-        points: pointsArray,
+        points: pointsData,
         lastSelectedPoint: lastSelectedPoint,
         timestamp: Date.now()
       };
 
       localStorage.setItem('fieldAnalysisData', JSON.stringify(dataToSave));
-      console.log('Saved field analysis data:', dataToSave);
+      console.log('Saved field analysis data after delay:', dataToSave);
     } catch (error) {
       console.error('Error saving to localStorage:', error);
     }
@@ -223,8 +225,15 @@ const Maps = () => {
           const latlngs = layer.getLatLngs();
           const flattenedLatLngs = Array.isArray(latlngs[0]) ? latlngs.flat() : latlngs;
           setSelectedRegion(flattenedLatLngs);
-          setPointsData(new Map()); // Clear existing point data when new region is selected
-          console.log('New polygon selected, cleared previous point data');
+
+          // Fetch data and update state
+          await Promise.all([
+            fetchWeatherData(flattenedLatLngs),
+            fetchSoilData(flattenedLatLngs)
+          ]);
+
+          // Save all data to localStorage after both API calls complete
+          saveToLocalStorageOld();
         }
       });
 
@@ -242,10 +251,10 @@ const Maps = () => {
   }, [showDrawTools]);
 
   // Fetch weather data
-  const fetchWeatherData = async (point) => {
-    if (point) {
-      const lat = point[0];
-      const lng = point[1];
+  const fetchWeatherData = async (latlngs) => {
+    if (latlngs.length > 0) {
+      const lat = latlngs[0].lat;
+      const lng = latlngs[0].lng;
       try {
         const response = await fetch(`${WEATHER_API_URL}?key=${WEATHER_API_KEY}&q=${lat},${lng}`);
         const data = await response.json();
@@ -254,6 +263,7 @@ const Maps = () => {
           humidity: data.current.humidity,
           windSpeed: data.current.wind_kph,
         };
+        setWeatherInfo(fetchedWeather);
         return fetchedWeather;
       } catch (error) {
         console.error('Error fetching weather data:', error);
@@ -263,10 +273,10 @@ const Maps = () => {
   };
 
   // Fetch soil quality data
-  const fetchSoilData = async (point) => {
-    if (point) {
-      const lat = point[0];
-      const lng = point[1];
+  const fetchSoilData = async (latlngs) => {
+    if (latlngs.length > 0) {
+      const lat = latlngs[0].lat;
+      const lng = latlngs[0].lng;
       const properties = ['sand', 'silt', 'clay', 'phh2o'];
 
       try {
@@ -291,6 +301,7 @@ const Maps = () => {
           ph: soilInfoObject.phh2o || 0,
         };
 
+        setSoilData(updatedSoilData);
         return updatedSoilData;
       } catch (error) {
         console.error('Error fetching soil data:', error);
@@ -306,8 +317,8 @@ const Maps = () => {
 
     try {
       const [weatherData, soilData] = await Promise.all([
-        fetchWeatherData(point),
-        fetchSoilData(point)
+        fetchWeatherData([point]),
+        fetchSoilData([point])
       ]);
 
       if (!weatherData || !soilData) {
@@ -348,6 +359,7 @@ const Maps = () => {
       const scaledTotal = scaledSoil.sand + scaledSoil.silt + scaledSoil.clay;
       if (scaledTotal !== 100) {
         const diff = 100 - scaledTotal;
+        // Add the difference to the largest value
         const max = Math.max(scaledSoil.sand, scaledSoil.silt, scaledSoil.clay);
         if (max === scaledSoil.sand) scaledSoil.sand += diff;
         else if (max === scaledSoil.silt) scaledSoil.silt += diff;
@@ -361,14 +373,6 @@ const Maps = () => {
         weather: weatherData,
         soil: scaledSoil
       };
-
-      // Store the point data in our Map
-      const pointKey = `${point[0]},${point[1]}`;
-      setPointsData(prevData => {
-        const newData = new Map(prevData);
-        newData.set(pointKey, pointInfo);
-        return newData;
-      });
 
       setSelectedPointInfo(pointInfo);
       setLastSelectedPoint(pointInfo);
@@ -384,6 +388,7 @@ const Maps = () => {
 
     } catch (error) {
       console.error('Error fetching API data:', error);
+      // Set default values on error
       setSoilData({ sand: 0, silt: 0, clay: 0, ph: 0 });
       setWeatherInfo(null);
     }
