@@ -6,6 +6,7 @@ import SignUp from './components/SignUp';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import EmailVerification from './components/EmailVerification';
+import './styles/animations.css';
 
 function App() {
   return (

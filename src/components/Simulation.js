@@ -40,6 +40,12 @@ const SYSTEM_REQUIREMENTS = {
   minGPUMemory: 2 // GB
 };
 
+const DUMMY_SOIL_DATA = {
+  sand: 0,
+  silt: 0,
+  clay: 0
+};
+
 // Check system compatibility
 const checkSystemCompatibility = () => {
   try {
@@ -84,12 +90,71 @@ const FarmSimulation = () => {
   const [showHighlights, setShowHighlights] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isHighQuality, setIsHighQuality] = useState(false);
-  const [soilComposition, setSoilComposition] = useState({
-    sand: 33,
-    silt: 33,
-    clay: 34
-  });
-  
+  const [soilComposition, setSoilComposition] = useState(DUMMY_SOIL_DATA);
+  const [fieldData, setFieldData] = useState(null);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  const loadFieldData = () => {
+    try {
+      const savedData = localStorage.getItem('fieldAnalysisData');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        console.log('Loaded field analysis data in simulation:', parsedData);
+        setFieldData(parsedData);
+        
+        // Update soil composition if points data exists
+        if (parsedData.points && parsedData.points.length > 0) {
+          // Only use points that have real soil data (non-zero values)
+          const pointsWithSoil = parsedData.points.filter(point => 
+            point.soil && 
+            typeof point.soil.sand === 'number' &&
+            typeof point.soil.silt === 'number' &&
+            typeof point.soil.clay === 'number' &&
+            (point.soil.sand > 0 || point.soil.silt > 0 || point.soil.clay > 0)
+          );
+          
+          if (pointsWithSoil.length > 0) {
+            // Calculate average soil composition from points with real data
+            const avgSoil = pointsWithSoil.reduce((acc, point) => {
+              acc.sand += point.soil.sand;
+              acc.silt += point.soil.silt;
+              acc.clay += point.soil.clay;
+              return acc;
+            }, { sand: 0, silt: 0, clay: 0 });
+            
+            const numPoints = pointsWithSoil.length;
+            const newSoilComposition = {
+              sand: Math.round(avgSoil.sand / numPoints),
+              silt: Math.round(avgSoil.silt / numPoints),
+              clay: Math.round(avgSoil.clay / numPoints)
+            };
+            
+            // Ensure values add up to 100
+            const total = newSoilComposition.sand + newSoilComposition.silt + newSoilComposition.clay;
+            if (total !== 100) {
+              // Adjust the largest value to make total 100
+              const diff = 100 - total;
+              const max = Math.max(newSoilComposition.sand, newSoilComposition.silt, newSoilComposition.clay);
+              if (max === newSoilComposition.sand) newSoilComposition.sand += diff;
+              else if (max === newSoilComposition.silt) newSoilComposition.silt += diff;
+              else newSoilComposition.clay += diff;
+            }
+            
+            console.log('Final soil composition from API data:', newSoilComposition);
+            setSoilComposition(newSoilComposition);
+          } else {
+            console.log('No points with real soil data found, using zeros');
+            setSoilComposition(DUMMY_SOIL_DATA);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading field data:', error);
+      setSoilComposition(DUMMY_SOIL_DATA);
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
 
   // Calculate number of plants and sprinklers based on soil composition and sector size
   const layoutConfig = useMemo(() => {
@@ -511,6 +576,7 @@ const FarmSimulation = () => {
   };
 
   useEffect(() => {
+    loadFieldData();
     const isCompatible = checkSystemCompatibility();
     
     let cleanupFunctions = [];

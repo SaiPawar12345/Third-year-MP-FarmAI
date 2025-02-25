@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, GeoJSON, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import L from 'leaflet';
@@ -7,10 +7,23 @@ import 'leaflet-draw';
 import './Maps.css';
 
 const customIcon = new L.Icon({
-  iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/15/Marker_icon.svg',
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  shadowAnchor: [12, 41]
+});
+
+const selectedIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  shadowAnchor: [12, 41]
 });
 
 const WEATHER_API_KEY = '0e218b7bd9e2434db43163834241910';
@@ -18,15 +31,104 @@ const WEATHER_API_URL = 'https://api.weatherapi.com/v1/current.json';
 const SOIL_API_URL = 'https://rest.isric.org/soilgrids/v2.0/properties/query';
 
 const Maps = () => {
-  const mapRef = useRef();
   const [selectedPoints, setSelectedPoints] = useState([]);
   const [selectedRegion, setSelectedRegion] = useState([]);
+  const [pointsData, setPointsData] = useState(new Map()); // Store data for each point
+  const [lastSelectedPoint, setLastSelectedPoint] = useState(null);
+  const [selectedPointInfo, setSelectedPointInfo] = useState(null);
   const [showDrawTools, setShowDrawTools] = useState(false);
   const [showGeoJSON, setShowGeoJSON] = useState(false);
   const [weatherInfo, setWeatherInfo] = useState(null);
   const [useGeoMap, setUseGeoMap] = useState(false);
   const [geoData, setGeoData] = useState(null);
-  const [soilData, setSoilData] = useState({ sand: null, silt: null, clay: null, ph: null });
+  const [soilData, setSoilData] = useState({ sand: 0, silt: 0, clay: 0, ph: 0 });
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('soil');
+  const mapRef = useRef();
+
+  const loadSavedData = () => {
+    try {
+      const savedData = localStorage.getItem('fieldAnalysisData');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        console.log('Loading saved field analysis data:', parsedData);
+        
+        if (parsedData.points && parsedData.points.length > 0) {
+          setSelectedRegion(parsedData.points.map(point => point.location));
+        }
+        
+        // Convert saved points to Map
+        const newPointsData = new Map();
+        parsedData.points.forEach(point => {
+          const key = `${point.location[0]},${point.location[1]}`;
+          if (point.soil && point.weather) {
+            newPointsData.set(key, {
+              location: point.location,
+              soil: point.soil,
+              weather: point.weather
+            });
+          }
+        });
+        setPointsData(newPointsData);
+        
+        // Load last selected point if it exists
+        if (parsedData.lastSelectedPoint) {
+          setLastSelectedPoint(parsedData.lastSelectedPoint);
+          setSelectedPointInfo(parsedData.lastSelectedPoint);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved data:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadSavedData();
+  }, []);
+
+  const saveToLocalStorage = () => {
+    if (selectedRegion.length === 0 || pointsData.size === 0) return;
+
+    try {
+      const pointsArray = selectedRegion.map(point => {
+        const key = `${point[0]},${point[1]}`;
+        const pointInfo = pointsData.get(key);
+        
+        return {
+          location: point,
+          soil: pointInfo?.soil || { sand: 0, silt: 0, clay: 0, ph: 0 },
+          weather: pointInfo?.weather || null
+        };
+      });
+
+      const dataToSave = {
+        points: pointsArray,
+        lastSelectedPoint: lastSelectedPoint,
+        timestamp: Date.now()
+      };
+
+      localStorage.setItem('fieldAnalysisData', JSON.stringify(dataToSave));
+      console.log('Saved field analysis data:', dataToSave);
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedPointInfo) {
+      console.log('Selected Point Data:', {
+        location: selectedPointInfo.location,
+        weather: selectedPointInfo.weather,
+        soil: selectedPointInfo.soil
+      });
+    }
+  }, [selectedPointInfo]);
+
+  useEffect(() => {
+    if (selectedRegion.length > 0 && selectedPointInfo) {
+      saveToLocalStorage();
+    }
+  }, [selectedRegion, selectedPointInfo]);
 
   // Load GeoJSON data
   useEffect(() => {
@@ -44,7 +146,7 @@ const Maps = () => {
   }, []);
 
   // Save data to local storage
-  const saveToLocalStorage = () => {
+  const saveToLocalStorageOld = () => {
     console.log('Preparing to save data to localStorage...');
     console.log('Current selectedRegion:', selectedRegion);
     console.log('Current weatherInfo:', weatherInfo);
@@ -71,6 +173,7 @@ const Maps = () => {
       });
     }
   };
+
   // Load data from local storage
   useEffect(() => {
     console.log('Attempting to load saved data from localStorage...');
@@ -81,7 +184,7 @@ const Maps = () => {
         console.log('Successfully loaded data from localStorage:', parsedData);
         setSelectedRegion(parsedData.polygonPoints || []);
         setWeatherInfo(parsedData.weatherInfo || null);
-        setSoilData(parsedData.soilData || { sand: null, silt: null, clay: null, ph: null });
+        setSoilData(parsedData.soilData || { sand: 0, silt: 0, clay: 0, ph: 0 });
       } else {
         console.log('No saved data found in localStorage');
       }
@@ -120,15 +223,8 @@ const Maps = () => {
           const latlngs = layer.getLatLngs();
           const flattenedLatLngs = Array.isArray(latlngs[0]) ? latlngs.flat() : latlngs;
           setSelectedRegion(flattenedLatLngs);
-
-          // Fetch data and update state
-          await Promise.all([
-            fetchWeatherData(flattenedLatLngs),
-            fetchSoilData(flattenedLatLngs)
-          ]);
-
-          // Save all data to localStorage after both API calls complete
-          saveToLocalStorage();
+          setPointsData(new Map()); // Clear existing point data when new region is selected
+          console.log('New polygon selected, cleared previous point data');
         }
       });
 
@@ -146,10 +242,10 @@ const Maps = () => {
   }, [showDrawTools]);
 
   // Fetch weather data
-  const fetchWeatherData = async (latlngs) => {
-    if (latlngs.length > 0) {
-      const lat = latlngs[0].lat;
-      const lng = latlngs[0].lng;
+  const fetchWeatherData = async (point) => {
+    if (point) {
+      const lat = point[0];
+      const lng = point[1];
       try {
         const response = await fetch(`${WEATHER_API_URL}?key=${WEATHER_API_KEY}&q=${lat},${lng}`);
         const data = await response.json();
@@ -158,7 +254,6 @@ const Maps = () => {
           humidity: data.current.humidity,
           windSpeed: data.current.wind_kph,
         };
-        setWeatherInfo(fetchedWeather);
         return fetchedWeather;
       } catch (error) {
         console.error('Error fetching weather data:', error);
@@ -168,10 +263,10 @@ const Maps = () => {
   };
 
   // Fetch soil quality data
-  const fetchSoilData = async (latlngs) => {
-    if (latlngs.length > 0) {
-      const lat = latlngs[0].lat;
-      const lng = latlngs[0].lng;
+  const fetchSoilData = async (point) => {
+    if (point) {
+      const lat = point[0];
+      const lng = point[1];
       const properties = ['sand', 'silt', 'clay', 'phh2o'];
 
       try {
@@ -196,7 +291,6 @@ const Maps = () => {
           ph: soilInfoObject.phh2o || 0,
         };
 
-        setSoilData(updatedSoilData);
         return updatedSoilData;
       } catch (error) {
         console.error('Error fetching soil data:', error);
@@ -205,86 +299,284 @@ const Maps = () => {
     }
   };
 
-  // Rest of your component remains the same...
-  const handleMapToggle = () => {
-    setUseGeoMap((prevUseGeoMap) => !prevUseGeoMap);
-  };
+  // Function to handle point selection
+  const handlePointSelect = async (point) => {
+    console.log('Selecting point:', point);
+    setSelectedPointInfo(null);
 
-  const handleGeoJSONToggle = () => {
-    setShowGeoJSON((prevShowGeoJSON) => !prevShowGeoJSON);
+    try {
+      const [weatherData, soilData] = await Promise.all([
+        fetchWeatherData(point),
+        fetchSoilData(point)
+      ]);
+
+      if (!weatherData || !soilData) {
+        console.error('Failed to fetch data from APIs');
+        return;
+      }
+
+      console.log('Raw API soil data:', soilData);
+
+      // First ensure all values are numbers and not null/undefined
+      const rawSoil = {
+        sand: Number(soilData.sand) || 0,
+        silt: Number(soilData.silt) || 0,
+        clay: Number(soilData.clay) || 0,
+        ph: Number(soilData.ph) || 0
+      };
+
+      // Normalize to ensure values are between 0-100
+      const normalizedSoil = {
+        sand: Math.min(100, Math.max(0, rawSoil.sand)),
+        silt: Math.min(100, Math.max(0, rawSoil.silt)),
+        clay: Math.min(100, Math.max(0, rawSoil.clay)),
+        ph: rawSoil.ph
+      };
+
+      console.log('Normalized soil data:', normalizedSoil);
+
+      // Calculate the total and create percentage distribution
+      const total = normalizedSoil.sand + normalizedSoil.silt + normalizedSoil.clay;
+      const scaledSoil = {
+        sand: Math.round((normalizedSoil.sand / total) * 100),
+        silt: Math.round((normalizedSoil.silt / total) * 100),
+        clay: Math.round((normalizedSoil.clay / total) * 100),
+        ph: normalizedSoil.ph
+      };
+
+      // Ensure percentages add up to exactly 100%
+      const scaledTotal = scaledSoil.sand + scaledSoil.silt + scaledSoil.clay;
+      if (scaledTotal !== 100) {
+        const diff = 100 - scaledTotal;
+        const max = Math.max(scaledSoil.sand, scaledSoil.silt, scaledSoil.clay);
+        if (max === scaledSoil.sand) scaledSoil.sand += diff;
+        else if (max === scaledSoil.silt) scaledSoil.silt += diff;
+        else scaledSoil.clay += diff;
+      }
+
+      console.log('Final scaled soil data:', scaledSoil);
+
+      const pointInfo = {
+        location: point,
+        weather: weatherData,
+        soil: scaledSoil
+      };
+
+      // Store the point data in our Map
+      const pointKey = `${point[0]},${point[1]}`;
+      setPointsData(prevData => {
+        const newData = new Map(prevData);
+        newData.set(pointKey, pointInfo);
+        return newData;
+      });
+
+      setSelectedPointInfo(pointInfo);
+      setLastSelectedPoint(pointInfo);
+      setSoilData(scaledSoil);
+      setWeatherInfo(weatherData);
+
+      // Wait 5 seconds before saving
+      console.log('Waiting 5 seconds before saving API data...');
+      setTimeout(() => {
+        console.log('Saving API data after 5 second delay');
+        saveToLocalStorage();
+      }, 5000);
+
+    } catch (error) {
+      console.error('Error fetching API data:', error);
+      setSoilData({ sand: 0, silt: 0, clay: 0, ph: 0 });
+      setWeatherInfo(null);
+    }
   };
 
   return (
-    <div className="container bg-gradient-to-r from-green-500 via-green-400 to-green-600 flex">
-      <div className="map-section">
-        <h2 className="map-title">Map</h2>
-        <div className="map-container">
-          <MapContainer
-            ref={mapRef}
-            center={[19.7515, 75.7139]}
-            zoom={6}
-            style={{ height: '100%', width: '100%' }}
-            whenCreated={(mapInstance) => {
-              mapRef.current = mapInstance;
-            }}
+    <div className="maps-container">
+      <div className="maps-header">
+        <h2>
+          <i className="fas fa-map-marker-alt"></i>
+          Field Analysis Dashboard
+        </h2>
+        <div className="maps-actions">
+          <button
+            className={`tool-button ${showDrawTools ? 'active' : ''}`}
+            onClick={() => setShowDrawTools(!showDrawTools)}
           >
-            <TileLayer
-              url={
-                useGeoMap
-                  ? 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
-                  : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-              }
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            />
-            {selectedPoints.map((point, index) => (
-              <Marker key={index} position={point} icon={customIcon} />
-            ))}
-            {showGeoJSON && geoData && <GeoJSON data={geoData} />}
-          </MapContainer>
+            <i className="fas fa-draw-polygon"></i>
+            Drawing Tools
+          </button>
+          <button
+            className={`tool-button ${useGeoMap ? 'active' : ''}`}
+            onClick={() => setUseGeoMap(!useGeoMap)}
+          >
+            <i className="fas fa-layer-group"></i>
+            Terrain View
+          </button>
+        </div>
+        <div className="point-count">
+          <i className="fas fa-map-marker-alt"></i>
+          {selectedRegion.length} Points
         </div>
       </div>
-      <div className="info-section">
-        <div className="button-container">
-          <button
-            className="toggle-draw-tools"
-            onClick={() => {
-              setShowDrawTools((prev) => !prev);
-              handleGeoJSONToggle();
-            }}
+
+      <div className="maps-content">
+        <div className="map-section">
+          <MapContainer
+            center={[21.7679, 78.8718]}
+            zoom={5}
+            style={{ height: '100%', width: '100%' }}
+            ref={mapRef}
           >
-            {showDrawTools ? 'Hide Drawing Tools' : 'Show Drawing Tools'}
-          </button>
-          <button className="enter-button" onClick={handleMapToggle}>
-            {useGeoMap ? 'Switch to Default View' : 'Switch to Terrain View'}
-          </button>
+            <TileLayer
+              url={useGeoMap 
+                ? 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+              }
+            />
+            {showGeoJSON && geoData && (
+              <GeoJSON data={geoData} style={{ color: '#2c7a40', weight: 2 }} />
+            )}
+            {selectedRegion.map((point, index) => (
+              <Marker 
+                key={index} 
+                position={point} 
+                icon={lastSelectedPoint && lastSelectedPoint.location[0] === point[0] && lastSelectedPoint.location[1] === point[1] ? selectedIcon : customIcon}
+                eventHandlers={{
+                  click: () => handlePointSelect(point),
+                  mouseover: (e) => {
+                    e.target.openPopup();
+                  },
+                  mouseout: (e) => {
+                    e.target.closePopup();
+                  }
+                }}
+              >
+                <Popup className="custom-popup">
+                  <div className="point-popup">
+                    <h3>Point {index + 1}</h3>
+                    <p>Latitude: {point.lat.toFixed(6)}</p>
+                    <p>Longitude: {point.lng.toFixed(6)}</p>
+                    {lastSelectedPoint && lastSelectedPoint.location[0] === point[0] && lastSelectedPoint.location[1] === point[1] && (
+                      <>
+                        <div className="popup-section">
+                          <h4><i className="fas fa-cloud-sun"></i> Weather</h4>
+                          <p><i className="fas fa-thermometer-half"></i> Temperature: {lastSelectedPoint.weather?.temperature}°C</p>
+                          <p><i className="fas fa-tint"></i> Humidity: {lastSelectedPoint.weather?.humidity}%</p>
+                        </div>
+                        <div className="popup-section">
+                          <h4><i className="fas fa-leaf"></i> Soil</h4>
+                          <p><i className="fas fa-mountain"></i> Sand: {lastSelectedPoint.soil?.sand}%</p>
+                          <p><i className="fas fa-water"></i> Clay: {lastSelectedPoint.soil?.clay}%</p>
+                          <p><i className="fas fa-flask"></i> pH: {lastSelectedPoint.soil?.ph}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
         </div>
-        <div className="selection-region">
-          <h3 className="text-header">Selection Region:</h3>
-          {selectedRegion.length > 0 ? (
-            selectedRegion.map((point, index) => (
-              <div key={index} className="point-container">
-                <p className="text-label">Point {index + 1}:</p>
-                <input type="text" value={`${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`} readOnly className="text-box" />
-              </div>
-            ))
-          ) : (
-            <p className="text-label">No region selected</p>
-          )}
-        </div>
-        {weatherInfo && (
-          <div className="weather-info">
-            <h3 className="text-header">Weather Information:</h3>
-            <p>Temperature: {weatherInfo.temperature} °C</p>
-            <p>Humidity: {weatherInfo.humidity} %</p>
-            <p>Wind Speed: {weatherInfo.windSpeed} kph</p>
+
+        <div className="info-panel">
+          <div className="info-tabs">
+            <button
+              className={`tab-button ${activeTab === 'soil' ? 'active' : ''}`}
+              onClick={() => setActiveTab('soil')}
+            >
+              <i className="fas fa-leaf"></i>
+              Soil Analysis
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'weather' ? 'active' : ''}`}
+              onClick={() => setActiveTab('weather')}
+            >
+              <i className="fas fa-cloud-sun"></i>
+              Weather Info
+            </button>
           </div>
-        )}
-        <div className="soil-quality-info">
-          <h3 className="text-header">Soil Quality Information:</h3>
-          <p>Sand: {soilData.sand/10 || 'No data'} %</p>
-          <p>Silt: {soilData.silt/10 || 'No data'} %</p>
-          <p>Clay: {soilData.clay/10 || 'No data'} %</p>
-          <p>pH: {soilData.ph/10 || 'No data'}</p>
+
+          {isLoading ? (
+            <div className="loading-spinner">
+              <i className="fas fa-spinner fa-spin"></i>
+              <span>Analyzing region...</span>
+            </div>
+          ) : (
+            <div className="info-content">
+              {activeTab === 'soil' && (
+                <div className="info-card">
+                  <h3>Soil Composition</h3>
+                  <div className="soil-metrics">
+                    <div className="metric">
+                      <span className="metric-label">Sand</span>
+                      <span className="metric-value">{soilData.sand ? `${soilData.sand}%` : 'No data'}</span>
+                    </div>
+                    <div className="metric">
+                      <span className="metric-label">Silt</span>
+                      <span className="metric-value">{soilData.silt ? `${soilData.silt}%` : 'No data'}</span>
+                    </div>
+                    <div className="metric">
+                      <span className="metric-label">Clay</span>
+                      <span className="metric-value">{soilData.clay ? `${soilData.clay}%` : 'No data'}</span>
+                    </div>
+                    <div className="metric">
+                      <span className="metric-label">pH Level</span>
+                      <span className="metric-value">{soilData.ph ? soilData.ph.toFixed(1) : 'No data'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'weather' && weatherInfo && (
+                <div className="info-card">
+                  <h3>Current Weather</h3>
+                  <div className="weather-metrics">
+                    <div className="metric">
+                      <i className="fas fa-thermometer-half"></i>
+                      <span className="metric-label">Temperature</span>
+                      <span className="metric-value">{weatherInfo.temperature}°C</span>
+                    </div>
+                    <div className="metric">
+                      <i className="fas fa-tint"></i>
+                      <span className="metric-label">Humidity</span>
+                      <span className="metric-value">{weatherInfo.humidity}%</span>
+                    </div>
+                    <div className="metric">
+                      <i className="fas fa-wind"></i>
+                      <span className="metric-label">Wind Speed</span>
+                      <span className="metric-value">{weatherInfo.windSpeed} km/h</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedRegion.length > 0 && (
+            <div className="selected-region">
+              <h3>
+                <i className="fas fa-map-marker-alt"></i>
+                Selected Points ({selectedRegion.length})
+              </h3>
+              <div className="points-list">
+                {selectedRegion.map((point, index) => (
+                  <div 
+                    key={index} 
+                    className={`point-item ${lastSelectedPoint && lastSelectedPoint.location[0] === point[0] && lastSelectedPoint.location[1] === point[1] ? 'active' : ''}`}
+                    onClick={() => handlePointSelect(point)}
+                  >
+                    <span>Point {index + 1}</span>
+                    <span className="coordinates">
+                      {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button className="save-button" onClick={saveToLocalStorage}>
+                <i className="fas fa-save"></i>
+                Save Analysis
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

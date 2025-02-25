@@ -181,10 +181,364 @@
   margin-bottom: 0.25rem;
 }
 
-/* Form element focus styles */
-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(44, 122, 64, 0.2);
+/* New Styles */
+
+.maps-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  background: #fff;
+  padding: 20px;
+  gap: 20px;
+}
+
+.maps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.maps-header h2 {
+  color: #2c7a40;
+  margin: 0;
+}
+
+.maps-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.tool-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid #2c7a40;
+  border-radius: 4px;
+  background: white;
+  color: #2c7a40;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tool-button:hover,
+.tool-button.active {
+  background: #2c7a40;
+  color: white;
+}
+
+.tool-button i {
+  font-size: 16px;
+}
+
+.maps-content {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.map-section {
+  flex: 1;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.info-panel {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.info-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  background: #e9ecef;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tab-button.active {
+  background: #2c7a40;
+  color: white;
+}
+
+.info-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.info-card h3 {
+  color: #2c7a40;
+  margin: 0 0 15px 0;
+}
+
+.soil-metrics,
+.weather-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.metric-label {
+  color: #6c757d;
+  font-size: 0.9em;
+}
+
+.metric-value {
+  font-size: 1.1em;
+  font-weight: 500;
+  color: #2c7a40;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #2c7a40;
+}
+
+.loading-spinner i {
+  font-size: 24px;
+}
+
+.selected-region {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: 300px;
+}
+
+.selected-region h3 {
+  margin: 0 0 15px 0;
+  color: #2c7a40;
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.points-list {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 0 15px 0;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #2c7a40 #e9ecef;
+}
+
+/* Webkit scrollbar styles */
+.points-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.points-list::-webkit-scrollbar-track {
+  background: #e9ecef;
+  border-radius: 3px;
+}
+
+.points-list::-webkit-scrollbar-thumb {
+  background-color: #2c7a40;
+  border-radius: 3px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.points-list::-webkit-scrollbar-thumb:hover {
+  background-color: #236331;
+}
+
+.point-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 8px;
+  border: 1px solid transparent;
+}
+
+.point-item:last-child {
+  margin-bottom: 0;
+}
+
+.point-item:hover {
+  background: #e9ecef;
+  border-color: #2c7a40;
+}
+
+.point-item.active {
+  background: #e8f5e9;
+  border-color: #2c7a40;
+}
+
+.point-item span {
+  color: #2c7a40;
+  font-weight: 500;
+}
+
+.coordinates {
+  color: #6c757d;
+  font-size: 0.9em;
+  font-family: monospace;
+}
+
+.save-button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  background: #2c7a40;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  margin-top: auto;
+}
+
+.save-button:hover {
+  background: #236331;
+}
+
+.save-button i {
+  font-size: 1.1em;
+}
+
+/* Popup Styles */
+.custom-popup .leaflet-popup-content-wrapper {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
+}
+
+.custom-popup .leaflet-popup-content {
+  margin: 15px;
+  min-width: 250px;
+}
+
+.custom-popup .leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.point-popup {
+  padding: 10px;
+  max-width: 250px;
+}
+
+.point-popup h3 {
+  margin: 0 0 10px 0;
+  color: #2e7d32;
+  border-bottom: 2px solid #4caf50;
+  padding-bottom: 5px;
+}
+
+.point-popup .soil-data,
+.point-popup .weather-data {
+  margin: 10px 0;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.point-popup h4 {
+  margin: 0 0 8px 0;
+  color: #1b5e20;
+}
+
+.point-popup p {
+  margin: 4px 0;
+  color: #333;
+}
+
+.custom-marker.last-selected {
+  background-color: #ff4444;
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+  transform: scale(1.2);
+}
+
+.point-item.active {
+  background-color: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  font-weight: bold;
+}
+
+/* Marker Customization */
+.leaflet-marker-icon {
+  transition: transform 0.2s ease;
+}
+
+.leaflet-marker-icon:hover {
+  transform: scale(1.1);
+}
+
+.leaflet-marker-shadow {
+  transition: transform 0.2s ease;
+}
+
+.leaflet-marker-icon:hover + .leaflet-marker-shadow {
+  transform: scale(1.1);
+}
+
+/* Leaflet Map Customization */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+  margin: 15px;
+}
+
+.leaflet-popup-tip-container {
+  margin-top: -1px;
 }
 
 /* Responsive Design */

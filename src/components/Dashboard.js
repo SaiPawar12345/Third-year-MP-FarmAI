@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Maps from './Maps';
 import Simulation from './Simulation';
 import Data from './Data';
@@ -6,7 +6,16 @@ import SamplePages from './SamplePages';
 import Apps from './Apps';
 
 const Dashboard = () => {
-  const [activeSection, setActiveSection] = useState('dashboard'); // Set default to dashboard
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Array of random facts for each category
   const farmingFacts = [
@@ -74,6 +83,12 @@ const Dashboard = () => {
     "Diversifying crops through permaculture reduces the risk of crop failure and stabilizes income."
   ];
 
+  const weatherImpactFacts = [
+    "Understanding weather patterns helps optimize planting schedules.",
+    "Climate-smart farming practices increase resilience to weather changes.",
+    "Weather monitoring systems help protect crops from extreme conditions."
+  ];
+
   // Helper function to get a random fact from an array
   const getRandomFact = (factsArray) => {
     return factsArray[Math.floor(Math.random() * factsArray.length)];
@@ -81,88 +96,100 @@ const Dashboard = () => {
 
   // Handlers to set the active section
   const handleSectionClick = (section) => {
-    setActiveSection(section); // Set active section to the clicked one
+    setActiveSection(section);
   };
 
   return (
-    <div>
-      {/* Header with gradient */}
-      <header className=" p-4 flex justify-between items-center shadow-lg">
-        <div className="text-green-800 text-2xl font-bold">FARM AI SIMULATOR</div>
-      </header>
+    <div className="min-h-screen relative">
+      {/* Background Image with Parallax Effect */}
+      <div 
+        className="fixed inset-0 w-full h-full z-0"
+        style={{
+          backgroundImage: 'url("https://images.pexels.com/photos/440731/pexels-photo-440731.jpeg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          filter: 'brightness(0.9)',
+        }}
+      />
 
-      {/* Navigation bar with gradient */}
-      <nav className="bg-gradient-to-r from-green-500 via-green-400 to-green-600 p-2 flex justify-between items-center shadow-md">
-        <div className="flex items-center space-x-12">
-          <button onClick={() => handleSectionClick('dashboard')} className={`text-white flex items-center px-4 py-2 rounded shadow-md transition-colors duration-200 ${activeSection === 'dashboard' ? 'bg-gradient-to-r from-green-700 to-green-800 shadow-lg' : 'hover:bg-gradient-to-r from-green-600 to-green-700'} ${activeSection === 'dashboard' && 'font-bold'}`}><i className="fas fa-home mr-2"></i>Dashboard</button>
-          <button onClick={() => handleSectionClick('maps')} className={`text-white flex items-center px-4 py-2 rounded shadow-md transition-colors duration-200 ${activeSection === 'maps' ? 'bg-gradient-to-r from-green-700 to-green-800 shadow-lg' : 'hover:bg-gradient-to-r from-green-600 to-green-700'} ${activeSection === 'maps' && 'font-bold'}`}><i className="fas fa-cube mr-2"></i>Maps</button>
-          <button onClick={() => handleSectionClick('simulation')} className={`text-white flex items-center px-4 py-2 rounded shadow-md transition-colors duration-200 ${activeSection === 'simulation' ? 'bg-gradient-to-r from-green-700 to-green-800 shadow-lg' : 'hover:bg-gradient-to-r from-green-600 to-green-700'} ${activeSection === 'simulation' && 'font-bold'}`}><i className="fas fa-file-alt mr-2"></i>Simulation</button>
-          <button onClick={() => handleSectionClick('data')} className={`text-white flex items-center px-4 py-2 rounded shadow-md transition-colors duration-200 ${activeSection === 'data' ? 'bg-gradient-to-r from-green-700 to-green-800 shadow-lg' : 'hover:bg-gradient-to-r from-green-600 to-green-700'} ${activeSection === 'data' && 'font-bold'}`}><i className="fas fa-chart-bar mr-2"></i>Data</button>
-          <button onClick={() => handleSectionClick('samplePages')} className={`text-white flex items-center px-4 py-2 rounded shadow-md transition-colors duration-200 ${activeSection === 'samplePages' ? 'bg-gradient-to-r from-green-700 to-green-800 shadow-lg' : 'hover:bg-gradient-to-r from-green-600 to-green-700'} ${activeSection === 'samplePages' && 'font-bold'}`}><i className="fas fa-copy mr-2"></i>Fertilizers</button>
-          <button onClick={() => handleSectionClick('apps')} className={`text-white flex items-center px-4 py-2 rounded shadow-md transition-colors duration-200 ${activeSection === 'apps' ? 'bg-gradient-to-r from-green-700 to-green-800 shadow-lg' : 'hover:bg-gradient-to-r from-green-600 to-green-700'} ${activeSection === 'apps' && 'font-bold'}`}><i className="fas fa-th mr-2"></i>Apps</button>
-        </div>
-      </nav>
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black bg-opacity-40 z-0" />
 
-      {/* Conditional rendering for each section */}
-      <main className="p-4">
-        {activeSection === 'dashboard' && (
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center">
-              {/* Main Content */}
-              <div className="grid grid-cols-3 gap-12 mb-20">
-                <div className="bg-gradient-to-r from-pink-500 to-red-500 p-16 rounded-2xl text-white shadow-2xl">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl">Farming Fact</span>
-                    <i className="fas fa-chart-line text-6xl"></i>
-                  </div>
-                  <div className="text-3xl mt-6">{getRandomFact(farmingFacts)}</div>
-                </div>
-                <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-16 rounded-2xl text-white shadow-2xl">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl">Irrigation Fact</span>
-                    <i className="fas fa-bookmark text-6xl"></i>
-                  </div>
-                  <div className="text-3xl mt-6">{getRandomFact(irrigationFacts)}</div>
-                </div>
-                <div className="bg-gradient-to-r from-green-500 to-teal-500 p-16 rounded-2xl text-white shadow-2xl">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl">Fertilizer Fact</span>
-                    <i className="fas fa-map-marker-alt text-6xl"></i>
-                  </div>
-                  <div className="text-3xl mt-6">{getRandomFact(fertilizerFacts)}</div>
-                </div>
-                {/* New Container with random fact */}
-                <div className="bg-gradient-to-r from-purple-500 to-purple-700 p-16 rounded-2xl text-white shadow-2xl">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl">Polytunnel Fact</span>
-                    <i className="fas fa-star text-6xl"></i>
-                  </div>
-                  <div className="text-3xl mt-6">{getRandomFact(polytunnelFacts)}</div>
-                </div>
-                <div className="bg-gradient-to-r from-yellow-500 to-yellow-700 p-16 rounded-2xl text-white shadow-2xl">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl">Permaculture Fact</span>
-                    <i className="fas fa-star text-6xl"></i>
-                  </div>
-                  <div className="text-3xl mt-6">{getRandomFact(permacultureFacts)}</div>
-                </div>
-                <div className="bg-gradient-to-r from-orange-500 to-orange-700 p-16 rounded-2xl text-white shadow-2xl">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl">Bonus Fact</span>
-                    <i className="fas fa-star text-6xl"></i>
-                  </div>
-                  <div className="text-3xl mt-6">{getRandomFact(farmingFacts)}</div>
-                </div>
-              </div>
-            </div>
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Header */}
+        <header className="bg-green-800 bg-opacity-90 p-4 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div className="text-white text-2xl font-bold tracking-tight animate-fade-in">FARM AI SIMULATOR</div>
           </div>
-        )}
-        {activeSection === 'maps' && <Maps />}
-        {activeSection === 'simulation' && <Simulation />}
-        {activeSection === 'data' && <Data />}
-        {activeSection === 'samplePages' && <SamplePages />}
-        {activeSection === 'apps' && <Apps />}
-      </main>
+        </header>
+
+        {/* Navigation bar */}
+        <nav className="bg-green-900 bg-opacity-90 p-3 shadow-lg backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto flex items-center space-x-8 overflow-x-auto">
+            {[
+              { name: 'dashboard', icon: 'home', label: 'Dashboard' },
+              { name: 'maps', icon: 'map', label: 'Maps' },
+              { name: 'simulation', icon: 'chart-line', label: 'Simulation' },
+              { name: 'data', icon: 'database', label: 'Data' },
+              { name: 'samplePages', icon: 'leaf', label: 'Fertilizers' },
+              { name: 'apps', icon: 'th', label: 'Apps' }
+            ].map((item) => (
+              <button
+                key={item.name}
+                onClick={() => handleSectionClick(item.name)}
+                className={`text-white flex items-center px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 ${
+                  activeSection === item.name
+                    ? 'bg-green-700 shadow-inner scale-105'
+                    : 'hover:bg-green-700/50'
+                }`}
+              >
+                <i className={`fas fa-${item.icon} mr-2`}></i>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto p-6">
+          {activeSection === 'dashboard' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                { title: 'Farming Fact', icon: 'seedling', facts: farmingFacts },
+                { title: 'Irrigation Fact', icon: 'tint', facts: irrigationFacts },
+                { title: 'Fertilizer Fact', icon: 'flask', facts: fertilizerFacts },
+                { title: 'Polytunnel Fact', icon: 'greenhouse', facts: polytunnelFacts },
+                { title: 'Permaculture Fact', icon: 'leaf', facts: permacultureFacts },
+                { title: 'Weather Impact', icon: 'cloud-sun', facts: weatherImpactFacts }
+              ].map((card, index) => (
+                <div
+                  key={card.title}
+                  className="transform hover:scale-105 transition-all duration-300 animate-fade-in"
+                  style={{ animationDelay: `${index * 150}ms` }}
+                >
+                  <div className="bg-white bg-opacity-90 rounded-xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-2xl transition-shadow duration-300 backdrop-blur-sm">
+                    <div className="bg-green-800 p-4 flex justify-between items-center">
+                      <h3 className="text-xl font-semibold text-white">{card.title}</h3>
+                      <i className={`fas fa-${card.icon} text-3xl text-green-100`}></i>
+                    </div>
+                    <div className="p-6">
+                      <p className="text-gray-800 text-lg leading-relaxed">{getRandomFact(card.facts)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {activeSection === 'maps' && <Maps />}
+          {activeSection === 'simulation' && <Simulation />}
+          {activeSection === 'data' && <Data />}
+          {activeSection === 'samplePages' && <SamplePages />}
+          {activeSection === 'apps' && <Apps />}
+        </main>
+      </div>
     </div>
   );
 };
