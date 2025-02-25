@@ -94,7 +94,7 @@ const StartPage = () => {
             <FeatureCard
               icon={<FaLeaf size={32} />}
               title="Smart Crop Planning"
-              description="AI-powered recommendations for optimal crop selection."
+              description="AI-powered recommendations for optimal crop selection and rotation based on soil conditions and climate data."
             />
             <FeatureCard
               icon={<FaSeedling size={32} />}

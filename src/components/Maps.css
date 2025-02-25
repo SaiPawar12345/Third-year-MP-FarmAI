@@ -1,70 +1,107 @@
-/* Maps.css */
+/* Professional Green & Black Theme - Base Variables */
+:root {
+  --primary-green: #2c7a40;
+  --secondary-green: #1e5b2f;
+  --accent-green: #34d399;
+  --light-green: #e3f0e6;
+  --hover-green: #235e32;
+  --black: #1a1a1a;
+  --dark-gray: #333333;
+  --medium-gray: #666666;
+  --light-gray: #f1f1f1;
+  --white: #ffffff;
+  --shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --border-radius: 6px;
+}
 
-/* Container for both the map and info sections */
+/* Container for map and info sections */
 .container {
   display: flex;
   height: 100vh;
   width: 100%;
-  padding: 10px;
+  padding: 1rem;
   box-sizing: border-box;
+  gap: 1.5rem;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: var(--dark-gray);
 }
 
 /* Map Section */
 .map-section {
   width: 60%;
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--white);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   height: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .map-title {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 16px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--black);
+  border-bottom: 2px solid var(--primary-green);
+  padding-bottom: 0.5rem;
 }
 
 .map-container {
   flex-grow: 1;
   position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: var(--border-radius);
+  overflow: hidden;
 }
 
 /* Information Section */
 .info-section {
   width: 40%;
-  background-color: #f1f1f1;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-  margin-left: 20px;
+  background-color: var(--light-gray);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   height: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.info-section h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: var(--black);
+  font-weight: 600;
+  border-bottom: 2px solid var(--primary-green);
+  padding-bottom: 0.5rem;
 }
 
 .button-container {
   display: flex;
-  justify-content: space-between; /* Space buttons evenly */
-  margin-bottom: 20px; /* Add margin below buttons */
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
 }
 
 .toggle-draw-tools, .enter-button {
-  background: linear-gradient(to right, #34d399, #2dd4bf);
+  background: var(--primary-green);
   height: 48px;
   width: 45%;
-  border-radius: 8px;
-  color: white;
-  font-weight: bold;
+  border-radius: 4px;
+  color: var(--white);
+  font-weight: 600;
   border: none;
   cursor: pointer;
   transition: background 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 0.05rem;
+  font-size: 0.9rem;
 }
 
 .toggle-draw-tools:hover, .enter-button:hover {
-  background: linear-gradient(to right, #2dd4bf, #34d399);
+  background: var(--hover-green);
 }
 
 .selection-region {
@@ -72,87 +109,118 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin-top: 16px;
-  overflow-y: auto; /* Enable vertical scrolling */
-  max-height: 200px; /* Set a maximum height for the selection region */
-  padding: 10px; /* Add padding for better spacing */
-  border: 1px solid #d1d5db; /* Optional: add border for better visibility */
-  border-radius: 8px; /* Optional: rounding corners */
-  background-color: #f9f9f9; /* Optional: background color */
+  margin-top: 1rem;
+  overflow-y: auto;
+  max-height: 220px;
+  padding: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius);
+  background-color: var(--white);
 }
 
 .text-header {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--black);
+  align-self: flex-start;
 }
 
-
 .point-container {
-  background-color: #86efac; /* Light green color */
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--light-green);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 0.75rem;
+  width: 100%;
+  border-left: 3px solid var(--primary-green);
 }
 
 .point-container .text-label {
-  font-weight: bold;
+  font-weight: 600;
+  color: var(--dark-gray);
 }
 
 .text-box {
-  background-color: #fff;
+  background-color: var(--white);
   border: 1px solid #d1d5db;
   border-radius: 4px;
-  padding: 8px;
-  width: 60%; /* Adjust width */
+  padding: 0.5rem;
+  width: 60%;
   text-align: center;
+  color: var(--dark-gray);
 }
 
 .weather-info {
-  margin-top: 20px;
+  margin-top: 1.5rem;
 }
 
 .weather-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px; /* Space between weather items */
+  gap: 1rem;
 }
 
 .weather-item {
-  background-color: #e5f6e0; /* Light green for weather info */
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  flex: 1; /* Allow weather items to grow and shrink */
+  background-color: var(--light-green);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  flex: 1;
+  min-width: calc(50% - 0.5rem);
+  border-left: 3px solid var(--primary-green);
 }
 
 .weather-item .text-label {
-  font-weight: bold;
+  font-weight: 600;
+  color: var(--dark-gray);
+  display: block;
+  margin-bottom: 0.25rem;
 }
 
+/* Form element focus styles */
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(44, 122, 64, 0.2);
+}
 
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* Responsive Design */
+@media (max-width: 1024px) {
   .container {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .map-section,
+  .info-section {
+    width: 100%;
+    height: auto;
+    min-height: 50vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .button-container {
     flex-direction: column;
   }
 
-  .map-section, .info-section {
-    width: 100%; /* Full width on smaller screens */
-    margin-left: 0; /* Remove margin on smaller screens */
+  .toggle-draw-tools, 
+  .enter-button {
+    width: 100%;
+    margin-bottom: 0.75rem;
   }
-
-  .button-container {
-    flex-direction: column; /* Stack buttons on top of each other */
+  
+  .weather-item {
+    min-width: 100%;
   }
+}
 
-  .toggle-draw-tools, .enter-button {
-    width: 100%; /* Full width for buttons */
-    margin-bottom: 10px; /* Space between buttons */
+@media (max-width: 480px) {
+  .map-section,
+  .info-section {
+    padding: 1rem;
   }
 }
