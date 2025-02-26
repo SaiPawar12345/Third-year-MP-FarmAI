@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import * as THREE from 'three';
 import { TextureLoader } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import './styles.css';
-
 
 // Constants
 const VIEW_SIZE = 880.89;
@@ -40,12 +41,6 @@ const SYSTEM_REQUIREMENTS = {
   minGPUMemory: 2 // GB
 };
 
-const DUMMY_SOIL_DATA = {
-  sand: 0,
-  silt: 0,
-  clay: 0
-};
-
 // Check system compatibility
 const checkSystemCompatibility = () => {
   try {
@@ -73,6 +68,37 @@ const checkSystemCompatibility = () => {
   }
 };
 
+const createGridLayer = (bounds, gridSize) => {
+  return L.gridLayer({
+    tileSize: L.point(gridSize, gridSize),
+    opacity: 0.4
+  }).createTile = function(coords) {
+    const tile = L.DomUtil.create('canvas', 'leaflet-tile');
+    const ctx = tile.getContext('2d');
+    const size = this.getTileSize();
+    tile.width = size.x;
+    tile.height = size.y;
+    
+    // Draw grid lines
+    ctx.strokeStyle = '#28a745';
+    ctx.lineWidth = 1;
+    
+    // Draw vertical line
+    ctx.beginPath();
+    ctx.moveTo(size.x, 0);
+    ctx.lineTo(size.x, size.y);
+    ctx.stroke();
+    
+    // Draw horizontal line
+    ctx.beginPath();
+    ctx.moveTo(0, size.y);
+    ctx.lineTo(size.x, size.y);
+    ctx.stroke();
+    
+    return tile;
+  };
+};
+
 const FarmSimulation = () => {
   const simulationRef = useRef();
   const rendererRef = useRef();
@@ -84,77 +110,230 @@ const FarmSimulation = () => {
   const frameIdRef = useRef();
   const measurementsRef = useRef([]);
 
-  
+  // Add refs for the map
+  const polygonMapRef = useRef(null);
+  const polygonLayerRef = useRef(null);
+  const [polygonPoints, setPolygonPoints] = useState([]);
+
   const [selectedSector, setSelectedSector] = useState('sector1');
   const [selectedPlant, setSelectedPlant] = useState('wheat');
   const [showHighlights, setShowHighlights] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isHighQuality, setIsHighQuality] = useState(false);
-  const [soilComposition, setSoilComposition] = useState(DUMMY_SOIL_DATA);
-  const [fieldData, setFieldData] = useState(null);
+  const [soilComposition, setSoilComposition] = useState({
+    sand: 33,
+    silt: 33,
+    clay: 34
+  });
   const [isDataLoading, setIsDataLoading] = useState(true);
 
-  const loadFieldData = () => {
+  // Load saved data from localStorage
+  const loadSavedData = useCallback(() => {
     try {
-      const savedData = localStorage.getItem('fieldAnalysisData');
+      const savedData = localStorage.getItem('mapAnalysisData');
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        console.log('Loaded field analysis data in simulation:', parsedData);
-        setFieldData(parsedData);
+        console.log('Loading saved data:', parsedData);
         
-        // Update soil composition if points data exists
-        if (parsedData.points && parsedData.points.length > 0) {
-          // Only use points that have real soil data (non-zero values)
-          const pointsWithSoil = parsedData.points.filter(point => 
-            point.soil && 
-            typeof point.soil.sand === 'number' &&
-            typeof point.soil.silt === 'number' &&
-            typeof point.soil.clay === 'number' &&
-            (point.soil.sand > 0 || point.soil.silt > 0 || point.soil.clay > 0)
-          );
+        if (parsedData.soil) {
+          // Round the soil values to integers
+          const newSoilComposition = {
+            sand: Math.round(parsedData.soil.sand),
+            silt: Math.round(parsedData.soil.silt),
+            clay: Math.round(parsedData.soil.clay)
+          };
           
-          if (pointsWithSoil.length > 0) {
-            // Calculate average soil composition from points with real data
-            const avgSoil = pointsWithSoil.reduce((acc, point) => {
-              acc.sand += point.soil.sand;
-              acc.silt += point.soil.silt;
-              acc.clay += point.soil.clay;
-              return acc;
-            }, { sand: 0, silt: 0, clay: 0 });
-            
-            const numPoints = pointsWithSoil.length;
-            const newSoilComposition = {
-              sand: Math.round(avgSoil.sand / numPoints),
-              silt: Math.round(avgSoil.silt / numPoints),
-              clay: Math.round(avgSoil.clay / numPoints)
-            };
-            
-            // Ensure values add up to 100
-            const total = newSoilComposition.sand + newSoilComposition.silt + newSoilComposition.clay;
-            if (total !== 100) {
-              // Adjust the largest value to make total 100
-              const diff = 100 - total;
-              const max = Math.max(newSoilComposition.sand, newSoilComposition.silt, newSoilComposition.clay);
-              if (max === newSoilComposition.sand) newSoilComposition.sand += diff;
-              else if (max === newSoilComposition.silt) newSoilComposition.silt += diff;
-              else newSoilComposition.clay += diff;
-            }
-            
-            console.log('Final soil composition from API data:', newSoilComposition);
-            setSoilComposition(newSoilComposition);
-          } else {
-            console.log('No points with real soil data found, using zeros');
-            setSoilComposition(DUMMY_SOIL_DATA);
-          }
+          console.log('Setting soil composition:', newSoilComposition);
+          setSoilComposition(newSoilComposition);
+        }
+
+        // Load polygon points
+        if (parsedData.points && parsedData.points.length > 0) {
+          console.log('Loading polygon points:', parsedData.points);
+          setPolygonPoints(parsedData.points);
         }
       }
     } catch (error) {
-      console.error('Error loading field data:', error);
-      setSoilComposition(DUMMY_SOIL_DATA);
+      console.error('Error loading saved data:', error);
     } finally {
       setIsDataLoading(false);
     }
-  };
+  }, []);
+
+  // Load saved data when component mounts
+  useEffect(() => {
+    loadSavedData();
+  }, [loadSavedData]);
+
+  // Add event listener for storage changes
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'mapAnalysisData') {
+        loadSavedData();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [loadSavedData]);
+
+  // Initialize polygon map
+  useEffect(() => {
+    if (!polygonMapRef.current) {
+      const map = L.map('polygon-preview', {
+        center: [20.5937, 78.9629], // Center of India
+        zoom: 5,
+        zoomControl: false,
+        dragging: false,
+        scrollWheelZoom: false
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'OpenStreetMap contributors'
+      }).addTo(map);
+
+      polygonMapRef.current = map;
+    }
+
+    return () => {
+      if (polygonMapRef.current) {
+        polygonMapRef.current.remove();
+        polygonMapRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update polygon on map when points change
+  useEffect(() => {
+    if (polygonMapRef.current && polygonPoints.length > 0) {
+      // Remove existing polygon and grid
+      if (polygonLayerRef.current) {
+        polygonLayerRef.current.remove();
+      }
+
+      // Create new polygon
+      const polygon = L.polygon(polygonPoints, {
+        color: '#28a745',
+        weight: 2,
+        fillColor: '#28a745',
+        fillOpacity: 0.3
+      });
+
+      // Get bounds of the polygon
+      const bounds = polygon.getBounds();
+      
+      // Create SVG element for the grid
+      const svg = L.svg().addTo(polygonMapRef.current);
+      const svgElement = svg._container;
+      
+      // Create clipPath element
+      const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+      clipPath.setAttribute('id', 'polygon-clip');
+      
+      // Create path element for the polygon
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const latLngs = polygon.getLatLngs()[0];
+      const points = latLngs.map(ll => {
+        const point = polygonMapRef.current.latLngToLayerPoint(ll);
+        return `${point.x},${point.y}`;
+      }).join(' ');
+      path.setAttribute('d', `M ${points} Z`);
+      clipPath.appendChild(path);
+      svgElement.appendChild(clipPath);
+      
+      // Create grid group
+      const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      gridGroup.setAttribute('clip-path', 'url(#polygon-clip)');
+      
+      // Calculate grid lines
+      const topLeft = polygonMapRef.current.latLngToLayerPoint(bounds.getNorthWest());
+      const bottomRight = polygonMapRef.current.latLngToLayerPoint(bounds.getSouthEast());
+      
+      // Convert 50 meters to pixels at the current zoom level
+      const metersPerPixel = 40075016.686 * Math.abs(Math.cos(bounds.getCenter().lat * Math.PI/180)) / Math.pow(2, polygonMapRef.current.getZoom() + 8);
+      const gridSizeInPixels = 50 / metersPerPixel;
+      
+      // Create vertical lines
+      for (let x = topLeft.x; x <= bottomRight.x; x += gridSizeInPixels) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x);
+        line.setAttribute('y1', topLeft.y);
+        line.setAttribute('x2', x);
+        line.setAttribute('y2', bottomRight.y);
+        line.setAttribute('stroke', '#28a745');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('stroke-opacity', '0.5');
+        gridGroup.appendChild(line);
+      }
+      
+      // Create horizontal lines
+      for (let y = topLeft.y; y <= bottomRight.y; y += gridSizeInPixels) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', topLeft.x);
+        line.setAttribute('y1', y);
+        line.setAttribute('x2', bottomRight.x);
+        line.setAttribute('y2', y);
+        line.setAttribute('stroke', '#28a745');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('stroke-opacity', '0.5');
+        gridGroup.appendChild(line);
+      }
+      
+      svgElement.appendChild(gridGroup);
+      
+      // Update grid on zoom/pan
+      polygonMapRef.current.on('zoomend moveend', () => {
+        // Update clipPath
+        const newPoints = latLngs.map(ll => {
+          const point = polygonMapRef.current.latLngToLayerPoint(ll);
+          return `${point.x},${point.y}`;
+        }).join(' ');
+        path.setAttribute('d', `M ${newPoints} Z`);
+        
+        // Update grid lines
+        const newTopLeft = polygonMapRef.current.latLngToLayerPoint(bounds.getNorthWest());
+        const newBottomRight = polygonMapRef.current.latLngToLayerPoint(bounds.getSouthEast());
+        const newMetersPerPixel = 40075016.686 * Math.abs(Math.cos(bounds.getCenter().lat * Math.PI/180)) / Math.pow(2, polygonMapRef.current.getZoom() + 8);
+        const newGridSizeInPixels = 50 / newMetersPerPixel;
+        
+        // Remove old grid lines
+        while (gridGroup.firstChild) {
+          gridGroup.removeChild(gridGroup.firstChild);
+        }
+        
+        // Create new vertical lines
+        for (let x = newTopLeft.x; x <= newBottomRight.x; x += newGridSizeInPixels) {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', x);
+          line.setAttribute('y1', newTopLeft.y);
+          line.setAttribute('x2', x);
+          line.setAttribute('y2', newBottomRight.y);
+          line.setAttribute('stroke', '#28a745');
+          line.setAttribute('stroke-width', '1');
+          line.setAttribute('stroke-opacity', '0.5');
+          gridGroup.appendChild(line);
+        }
+        
+        // Create new horizontal lines
+        for (let y = newTopLeft.y; y <= newBottomRight.y; y += newGridSizeInPixels) {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', newTopLeft.x);
+          line.setAttribute('y1', y);
+          line.setAttribute('x2', newBottomRight.x);
+          line.setAttribute('y2', y);
+          line.setAttribute('stroke', '#28a745');
+          line.setAttribute('stroke-width', '1');
+          line.setAttribute('stroke-opacity', '0.5');
+          gridGroup.appendChild(line);
+        }
+      });
+
+      // Add polygon to map and fit bounds
+      polygon.addTo(polygonMapRef.current);
+      polygonMapRef.current.fitBounds(polygon.getBounds());
+      polygonLayerRef.current = polygon;
+    }
+  }, [polygonPoints]);
 
   // Calculate number of plants and sprinklers based on soil composition and sector size
   const layoutConfig = useMemo(() => {
@@ -576,7 +755,6 @@ const FarmSimulation = () => {
   };
 
   useEffect(() => {
-    loadFieldData();
     const isCompatible = checkSystemCompatibility();
     
     let cleanupFunctions = [];
@@ -781,9 +959,27 @@ const FarmSimulation = () => {
     camera.lookAt(0, 0, 0);
   };
 
+  const styles = {
+    loadingData: {
+      padding: '10px',
+      textAlign: 'center',
+      color: '#666',
+      fontStyle: 'italic',
+      backgroundColor: '#f5f5f5',
+      borderRadius: '4px',
+      margin: '10px 0'
+    }
+  };
+
   return (
     <div className="simulation-wrapper">
       <div className="simulation-content">
+        {/* Add polygon preview container */}
+        <div className="polygon-preview-container">
+          <h3>Field Boundary</h3>
+          <div id="polygon-preview" className="polygon-preview"></div>
+        </div>
+
         <div className="simulation-container">
           {isHighQuality && isLoading && (
             <div className="loading-overlay">
@@ -800,93 +996,97 @@ const FarmSimulation = () => {
           
           <div className="soil-composition">
             <h3>Soil Composition (%)</h3>
-            <div className="soil-inputs">
-              <label>
-                Sand:
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={soilComposition.sand}
-                  onChange={(e) => setSoilComposition(prev => ({
-                    ...prev,
-                    sand: parseInt(e.target.value)
-                  }))}
-                />
-              </label>
-              <label>
-                Silt:
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={soilComposition.silt}
-                  onChange={(e) => setSoilComposition(prev => ({
-                    ...prev,
-                    silt: parseInt(e.target.value)
-                  }))}
-                /></label>
+            {isDataLoading ? (
+              <div style={styles.loadingData}>Loading soil data...</div>
+            ) : (
+              <div className="soil-inputs">
                 <label>
-                  Clay:
+                  Sand:
                   <input
                     type="number"
                     min="0"
                     max="100"
-                    value={soilComposition.clay}
+                    value={soilComposition.sand}
                     onChange={(e) => setSoilComposition(prev => ({
                       ...prev,
-                      clay: parseInt(e.target.value)
+                      sand: parseInt(e.target.value)
                     }))}
                   />
                 </label>
+                <label>
+                  Silt:
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={soilComposition.silt}
+                    onChange={(e) => setSoilComposition(prev => ({
+                      ...prev,
+                      silt: parseInt(e.target.value)
+                    }))}
+                  /></label>
+                  <label>
+                    Clay:
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={soilComposition.clay}
+                      onChange={(e) => setSoilComposition(prev => ({
+                        ...prev,
+                        clay: parseInt(e.target.value)
+                      }))}
+                    />
+                  </label>
               </div>
-            </div>
+            )}
+          </div>
   
-            <div className="simulation-controls">
-              <select 
-                value={selectedSector}
-                onChange={(e) => setSelectedSector(e.target.value)}
-                className="sector-select"
-              >
-                {Object.entries(FARM_SECTORS).map(([key, sector]) => (
-                  <option key={key} value={key}>
-                    {sector.name} ({sector.size}m)
-                  </option>
-                ))}
-              </select>
+          <div className="simulation-controls">
+            <select 
+              value={selectedSector}
+              onChange={(e) => setSelectedSector(e.target.value)}
+              className="sector-select"
+            >
+              {Object.entries(FARM_SECTORS).map(([key, sector]) => (
+                <option key={key} value={key}>
+                  {sector.name} ({sector.size}m)
+                </option>
+              ))}
+            </select>
   
-              <select 
-                value={selectedPlant}
-                onChange={(e) => setSelectedPlant(e.target.value)}
-                className="plant-select"
-              >
-                {Object.keys(PLANT_LAYOUTS).map(plant => (
-                  <option key={plant} value={plant}>
-                    {plant.charAt(0).toUpperCase() + plant.slice(1)}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={isHighQuality ? 'high' : 'low'}
-                onChange={(e) => handleQualityToggle(e.target.value)}
-                className="quality-toggle"
-              >
-                <option value="high">High Quality</option>
-                <option value="low">Low Quality</option>
-              </select>
+            <select 
+              value={selectedPlant}
+              onChange={(e) => setSelectedPlant(e.target.value)}
+              className="plant-select"
+            >
+              {Object.keys(PLANT_LAYOUTS).map(plant => (
+                <option key={plant} value={plant}>
+                  {plant.charAt(0).toUpperCase() + plant.slice(1)}
+                </option>
+              ))}
+            </select>
+            <select
+              value={isHighQuality ? 'high' : 'low'}
+              onChange={(e) => handleQualityToggle(e.target.value)}
+              className="quality-toggle"
+            >
+              <option value="high">High Quality</option>
+              <option value="low">Low Quality</option>
+            </select>
 
-            </div>
+          </div>
   
-            <div className="view-controls">
-              <button onClick={() => setView('top')}>Top View</button>
-              <button onClick={() => setView('side')}>Side View</button>
-              <button onClick={() => setView('isometric')}>Isometric View</button>
-              <button onClick={() => setShowHighlights(!showHighlights)}>
-                {showHighlights ? 'Hide Grid' : 'Show Grid'}
-              </button>
-            </div>
-          </div>      
-        </div>
+          <div className="view-controls">
+            <button onClick={() => setView('top')}>Top View</button>
+            <button onClick={() => setView('side')}>Side View</button>
+            <button onClick={() => setView('isometric')}>Isometric View</button>
+            <button onClick={() => setShowHighlights(!showHighlights)}>
+              {showHighlights ? 'Hide Grid' : 'Show Grid'}
+            </button>
+          </div>
+        </div>      
+      </div>
     </div>
   );
 };

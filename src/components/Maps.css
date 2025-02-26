@@ -233,6 +233,27 @@
   font-size: 16px;
 }
 
+.tool-button.save-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.tool-button.save-btn:hover {
+  background-color: #218838;
+}
+
+.tool-button.save-btn i {
+  font-size: 14px;
+}
+
 .maps-content {
   display: flex;
   gap: 20px;
@@ -405,8 +426,9 @@
 }
 
 .point-item.active {
-  background: #e8f5e9;
-  border-color: #2c7a40;
+  background-color: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  font-weight: bold;
 }
 
 .point-item span {
@@ -577,4 +599,22 @@
   .info-section {
     padding: 1rem;
   }
+}
+
+/* Toast Customization */
+.Toastify__toast {
+  border-radius: 8px;
+  font-family: inherit;
+}
+
+.Toastify__toast--success {
+  background-color: #28a745;
+}
+
+.Toastify__toast--error {
+  background-color: #dc3545;
+}
+
+.Toastify__progress-bar {
+  background: rgba(255, 255, 255, 0.7);
 }

@@ -5,6 +5,8 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 import L from 'leaflet';
 import 'leaflet-draw';
 import './Maps.css';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const customIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -45,76 +47,11 @@ const Maps = () => {
   const [activeTab, setActiveTab] = useState('soil');
   const mapRef = useRef();
 
-  const loadSavedData = () => {
-    try {
-      const savedData = localStorage.getItem('fieldAnalysisData');
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        console.log('Loading saved field analysis data:', parsedData);
-        
-        if (parsedData.points && parsedData.points.length > 0) {
-          setSelectedRegion(parsedData.points.map(point => point.location));
-        }
-        
-        // Load last selected point if it exists
-        if (parsedData.lastSelectedPoint) {
-          setLastSelectedPoint(parsedData.lastSelectedPoint);
-          setSelectedPointInfo(parsedData.lastSelectedPoint);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading saved data:', error);
-    }
-  };
-
   useEffect(() => {
-    loadSavedData();
-  }, []);
-
-  const saveToLocalStorage = () => {
-    if (selectedRegion.length === 0) return;
-
-    try {
-      const pointsData = selectedRegion.map(point => {
-        // Find the corresponding point info
-        const pointInfo = selectedPointInfo && 
-          selectedPointInfo.location[0] === point[0] && 
-          selectedPointInfo.location[1] === point[1] 
-          ? selectedPointInfo 
-          : lastSelectedPoint && 
-            lastSelectedPoint.location[0] === point[0] && 
-            lastSelectedPoint.location[1] === point[1]
-          ? lastSelectedPoint
-          : null;
-
-        // Only save if we have real data from API
-        if (pointInfo && pointInfo.soil && pointInfo.weather) {
-          return {
-            location: point,
-            soil: pointInfo.soil,
-            weather: pointInfo.weather
-          };
-        } else {
-          return {
-            location: point,
-            soil: { sand: 0, silt: 0, clay: 0, ph: 0 },
-            weather: null
-          };
-        }
-      });
-
-      const dataToSave = {
-        points: pointsData,
-        lastSelectedPoint: lastSelectedPoint,
-        timestamp: Date.now()
-      };
-
-      localStorage.setItem('fieldAnalysisData', JSON.stringify(dataToSave));
-      console.log('Saved field analysis data after delay:', dataToSave);
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
+    if (mapRef.current) {
+      L.map = mapRef.current;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (selectedPointInfo) {
@@ -125,12 +62,6 @@ const Maps = () => {
       });
     }
   }, [selectedPointInfo]);
-
-  useEffect(() => {
-    if (selectedRegion.length > 0 && selectedPointInfo) {
-      saveToLocalStorage();
-    }
-  }, [selectedRegion, selectedPointInfo]);
 
   // Load GeoJSON data
   useEffect(() => {
@@ -145,54 +76,6 @@ const Maps = () => {
     };
 
     loadGeoJSON();
-  }, []);
-
-  // Save data to local storage
-  const saveToLocalStorageOld = () => {
-    console.log('Preparing to save data to localStorage...');
-    console.log('Current selectedRegion:', selectedRegion);
-    console.log('Current weatherInfo:', weatherInfo);
-    console.log('Current soilData:', soilData);
-
-    const dataToStore = {
-      polygonPoints: selectedRegion,
-      weatherInfo,
-      soilData,
-      timestamp: new Date().toISOString(),
-    };
-    
-    try {
-      localStorage.setItem('mapData', JSON.stringify(dataToStore));
-      console.log('Successfully stored data in localStorage:', {
-        storedData: dataToStore,
-        timestamp: new Date().toLocaleString(),
-        dataSize: new Blob([JSON.stringify(dataToStore)]).size + ' bytes'
-      });
-    } catch (error) {
-      console.error('Error storing data in localStorage:', {
-        error: error.message,
-        timestamp: new Date().toLocaleString()
-      });
-    }
-  };
-
-  // Load data from local storage
-  useEffect(() => {
-    console.log('Attempting to load saved data from localStorage...');
-    try {
-      const savedData = localStorage.getItem('mapData');
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        console.log('Successfully loaded data from localStorage:', parsedData);
-        setSelectedRegion(parsedData.polygonPoints || []);
-        setWeatherInfo(parsedData.weatherInfo || null);
-        setSoilData(parsedData.soilData || { sand: 0, silt: 0, clay: 0, ph: 0 });
-      } else {
-        console.log('No saved data found in localStorage');
-      }
-    } catch (error) {
-      console.error('Error loading data from localStorage:', error);
-    }
   }, []);
 
   // Set up Leaflet map with drawing tools
@@ -231,9 +114,6 @@ const Maps = () => {
             fetchWeatherData(flattenedLatLngs),
             fetchSoilData(flattenedLatLngs)
           ]);
-
-          // Save all data to localStorage after both API calls complete
-          saveToLocalStorageOld();
         }
       });
 
@@ -295,10 +175,10 @@ const Maps = () => {
         }, {});
 
         const updatedSoilData = {
-          sand: soilInfoObject.sand || 0,
-          silt: soilInfoObject.silt || 0,
-          clay: soilInfoObject.clay || 0,
-          ph: soilInfoObject.phh2o || 0,
+          sand: (soilInfoObject.sand)/10 || 0,
+          silt: (soilInfoObject.silt)/10 || 0,
+          clay: (soilInfoObject.clay)/10 || 0,
+          ph: (soilInfoObject.phh2o)/10 || 0,
         };
 
         setSoilData(updatedSoilData);
@@ -379,13 +259,6 @@ const Maps = () => {
       setSoilData(scaledSoil);
       setWeatherInfo(weatherData);
 
-      // Wait 5 seconds before saving
-      console.log('Waiting 5 seconds before saving API data...');
-      setTimeout(() => {
-        console.log('Saving API data after 5 second delay');
-        saveToLocalStorage();
-      }, 5000);
-
     } catch (error) {
       console.error('Error fetching API data:', error);
       // Set default values on error
@@ -394,8 +267,63 @@ const Maps = () => {
     }
   };
 
+  // Add saveData function
+  const saveData = () => {
+    try {
+      const dataToSave = {
+        points: selectedRegion,
+        soil: soilData,
+        weather: weatherInfo,
+        timestamp: Date.now()
+      };
+
+      localStorage.setItem('mapAnalysisData', JSON.stringify(dataToSave));
+      console.log('Data saved successfully:', {
+        points: dataToSave.points,
+        soil: dataToSave.soil,
+        weather: dataToSave.weather,
+        timestamp: new Date(dataToSave.timestamp).toLocaleString()
+      });
+
+      // Show success toast
+      toast.success('Data saved successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+
+    } catch (error) {
+      console.error('Error saving data:', error);
+      // Show error toast
+      toast.error('Failed to save data!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+    }
+  };
+
   return (
     <div className="maps-container">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <div className="maps-header">
         <h2>
           <i className="fas fa-map-marker-alt"></i>
@@ -415,6 +343,13 @@ const Maps = () => {
           >
             <i className="fas fa-layer-group"></i>
             Terrain View
+          </button>
+          <button 
+            className="tool-button save-btn"
+            onClick={saveData}
+          >
+            <i className="fas fa-save"></i>
+            Save Data
           </button>
         </div>
         <div className="point-count">
@@ -576,10 +511,6 @@ const Maps = () => {
                   </div>
                 ))}
               </div>
-              <button className="save-button" onClick={saveToLocalStorage}>
-                <i className="fas fa-save"></i>
-                Save Analysis
-              </button>
             </div>
           )}
         </div>
