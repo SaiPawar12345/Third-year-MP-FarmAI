@@ -1,36 +1,39 @@
 import React, { useState } from 'react';
+import './Fertilisers.css'; 
+import AgriChatbot from './AgriChatbot'; // Import the chatbot component
 
 const Fertilisers = () => {
   const [plant, setPlant] = useState('');
   const [soilN, setSoilN] = useState('');
   const [soilP, setSoilP] = useState('');
   const [soilK, setSoilK] = useState('');
-  const [landArea, setLandArea] = useState(''); // New state for land area
+  const [landArea, setLandArea] = useState('');
   const [recommendation, setRecommendation] = useState('');
-  const [fertiliserAmount, setFertiliserAmount] = useState(''); // New state for fertiliser amount
+  const [fertiliserAmount, setFertiliserAmount] = useState('');
   const [error, setError] = useState('');
+  const [plantImage, setPlantImage] = useState('');
 
   // Fertiliser recommendations and images based on plant type
   const fertiliserRecommendations = {
     tomatoes: {
       recommendation: 'High-phosphorus fertilizer, like 4-12-4, to support root growth and fruit development.',
-      image: 'public\assets\tomato.jpg.jpg', // Update with the correct image path
+      image: '/assets/tomato.jpg',
     },
     peas: {
       recommendation: 'Balanced NPK fertilizer, like 5-10-10, low in nitrogen to avoid excessive foliage growth.',
-      image: 'public\assets\pea plant.jpg.jpg', // Update with the correct image path
+      image: '/assets/pea plant.jpg',
     },
     wheat: {
       recommendation: 'Nitrogen-heavy fertilizer, like 32-0-4, to promote strong stem and leaf development.',
-      image: 'public\assets\wheat.jpgt.jpg', // Update with the correct image path
+      image: '/assets/wheat.jpg',
     },
     soybean: {
       recommendation: 'Moderate potassium and phosphorus fertilizer, like 2-4-4, to encourage pod formation.',
-      image: 'public\assets\soyabean.jpg', // Update with the correct image path
+      image: '/assets/soyabean.jpg',
     },
     corn: {
       recommendation: 'High nitrogen fertilizer, like 16-16-8, for strong stalk growth and cob development.',
-      image: 'public\assets\corn.jpg.jpg', // Update with the correct image path
+      image: '/assets/corn.jpg',
     },
   };
 
@@ -43,7 +46,8 @@ const Fertilisers = () => {
   const handlePlantChange = (e) => {
     setPlant(e.target.value);
     setRecommendation('');
-    setFertiliserAmount(''); // Reset fertiliser amount
+    setFertiliserAmount('');
+    setPlantImage('');
     setError('');
   };
 
@@ -76,97 +80,110 @@ const Fertilisers = () => {
     // Calculate the amount of fertiliser needed based on land area (example: 100 kg per acre)
     const fertiliserPerAcre = 100; // Define how much fertiliser is needed per acre
     const amountNeeded = landArea * fertiliserPerAcre;
-    setFertiliserAmount(amountNeeded.toFixed(2)); // Set fertiliser amount
+    setFertiliserAmount(amountNeeded.toFixed(2));
 
     // Set the plant image URL
     setPlantImage(image);
   };
 
-  const [plantImage, setPlantImage] = useState(''); // New state for plant image
-
   return (
-    <div className="flex">
+    <div className="fertiliser-container">      
       {/* Left Section: Inputs */}
-      <div className="w-1/2 p-4 bg-green-100">
-        <h2 className="text-xl font-bold mb-4">Input Parameters</h2>
+      <div className="left-section">
+        <h2 className="section-title">Input Parameters</h2>
 
-        <label className="block mb-2">Select Plant Type:</label>
-        <select
-          value={plant}
-          onChange={handlePlantChange}
-          className="w-full mb-4 p-2 border"
-        >
-          <option value="">Choose Plant</option>
-          <option value="tomatoes">Tomatoes</option>
-          <option value="peas">Peas</option>
-          <option value="wheat">Wheat</option>
-          <option value="soybean">Soybean</option>
-          <option value="corn">Corn</option>
-        </select>
+        <div className="input-group">
+          <label className="input-label">Select Plant Type:</label>
+          <select
+            value={plant}
+            onChange={handlePlantChange}
+            className="select"
+          >
+            <option value="">Choose Plant</option>
+            <option value="tomatoes">Tomatoes</option>
+            <option value="peas">Peas</option>
+            <option value="wheat">Wheat</option>
+            <option value="soybean">Soybean</option>
+            <option value="corn">Corn</option>
+          </select>
+        </div>
 
-        <label className="block mb-2">Soil Nitrogen (%)</label>
-        <input
-          type="number"
-          value={soilN}
-          onChange={(e) => handleSoilChange(e, setSoilN)}
-          className="w-full mb-4 p-2 border"
-          placeholder="0-100"
-        />
+        <div className="input-group">
+          <label className="input-label">Soil Nitrogen (%)</label>
+          <input
+            type="number"
+            value={soilN}
+            onChange={(e) => handleSoilChange(e, setSoilN)}
+            className="input"
+            placeholder="0-100"
+          />
+        </div>
 
-        <label className="block mb-2">Soil Phosphorus (%)</label>
-        <input
-          type="number"
-          value={soilP}
-          onChange={(e) => handleSoilChange(e, setSoilP)}
-          className="w-full mb-4 p-2 border"
-          placeholder="0-100"
-        />
+        <div className="input-group">
+          <label className="input-label">Soil Phosphorus (%)</label>
+          <input
+            type="number"
+            value={soilP}
+            onChange={(e) => handleSoilChange(e, setSoilP)}
+            className="input"
+            placeholder="0-100"
+          />
+        </div>
 
-        <label className="block mb-2">Soil Potassium (%)</label>
-        <input
-          type="number"
-          value={soilK}
-          onChange={(e) => handleSoilChange(e, setSoilK)}
-          className="w-full mb-4 p-2 border"
-          placeholder="0-100"
-        />
+        <div className="input-group">
+          <label className="input-label">Soil Potassium (%)</label>
+          <input
+            type="number"
+            value={soilK}
+            onChange={(e) => handleSoilChange(e, setSoilK)}
+            className="input"
+            placeholder="0-100"
+          />
+        </div>
 
-        <label className="block mb-2">Land Area (acres)</label>
-        <input
-          type="number"
-          value={landArea}
-          onChange={(e) => setLandArea(e.target.value)}
-          className="w-full mb-4 p-2 border"
-          placeholder="Enter land area in acres"
-          min="1"
-        />
+        <div className="input-group">
+          <label className="input-label">Land Area (acres)</label>
+          <input
+            type="number"
+            value={landArea}
+            onChange={(e) => setLandArea(e.target.value)}
+            className="input"
+            placeholder="Enter land area in acres"
+            min="1"
+          />
+        </div>
 
         <button
           onClick={handleRecommendation}
-          className="w-full mt-4 p-2 bg-blue-500 text-white font-semibold"
+          className="recommend-button"
         >
           Recommend Fertiliser
         </button>
 
-        {error && <p className="text-red-500 mt-2">{error}</p>}
+        {error && <p className="error-message">{error}</p>}
       </div>
 
       {/* Right Section: Output */}
-      <div className="w-1/2 p-4 bg-green-200">
-        <h2 className="text-xl font-bold mb-4">Recommended Fertiliser</h2>
+      <div className="right-section">
+        <h2 className="section-title">Recommended Fertiliser</h2>
         {recommendation ? (
-          <div className="p-4 bg-white border rounded-lg">
-            <h3 className="font-semibold text-lg mb-2">{plant.toUpperCase()}</h3>
-            <p>{recommendation}</p>
-            <p className="mt-2 font-semibold">Amount of Fertiliser Needed (kg): {fertiliserAmount}</p>
+          <div className="recommendation-box">
+            <h3 className="plant-title">{plant.toUpperCase()}</h3>
+            <p className="recommendation-text">{recommendation}</p>
+            <p className="fertiliser-amount">Amount of Fertiliser Needed: <span>{fertiliserAmount} kg</span></p>
             {plantImage && (
-              <img src={plantImage} alt={`${plant} plant`} className="mt-4 w-full h-auto" />
+              <div className="plant-image-container">
+                <img src={plantImage} alt={`${plant} plant`} className="plant-image" />
+              </div>
             )}
           </div>
         ) : (
-          <p className="text-gray-600">Please input parameters and click "Recommend Fertiliser".</p>
+          <p className="placeholder-text">Please input parameters and click "Recommend Fertiliser".</p>
         )}
       </div>
+      
+      {/* Add the AgriChatbot component */}
+      <AgriChatbot />
     </div>
   );
 };

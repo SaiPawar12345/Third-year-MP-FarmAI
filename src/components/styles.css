@@ -169,6 +169,36 @@
   background-color: var(--hover-green);
 }
 
+/* Custom Zoom Control Styles */
+.custom-zoom-control {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-right: 10px;
+}
+
+.custom-zoom-control button {
+  width: 30px;
+  height: 30px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.custom-zoom-control button:hover {
+  background: #f4f4f4;
+}
+
+.custom-zoom-control button:active {
+  background: #e0e0e0;
+}
+
 /* Loading Overlay Styles */
 .loading-overlay {
   position: absolute;
@@ -190,7 +220,7 @@
   padding: 15px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-right: 20px;
-  width: 300px;
+  width: 330px;
 }
 
 .polygon-preview-container h3 {
@@ -201,10 +231,18 @@
 
 .polygon-preview {
   width: 100%;
-  height: 300px;
+  height: 330px;
   border-radius: 4px;
   overflow: hidden;
   border: 1px solid #e0e0e0;
+}
+
+.field-boundary-container {
+  width: 330px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Form element focus styles */

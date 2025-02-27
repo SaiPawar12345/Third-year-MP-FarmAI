@@ -19,7 +19,8 @@ const STANDARD_AREAS = {
   tomato: 4  // 2m x 2m
 };
 
-const FARM_SECTORS = {
+// Create a copy of default farm sectors
+const DEFAULT_FARM_SECTORS = {
   sector1: { name: 'North Field', size: 40, soil: { clay: 30, silt: 35, sand: 35 } },
   sector2: { name: 'South Field', size: 40, soil: { clay: 40, silt: 40, sand: 20 } },
   sector3: { name: 'East Field', size: 30, soil: { clay: 20, silt: 40, sand: 40 } },
@@ -68,9 +69,9 @@ const checkSystemCompatibility = () => {
   }
 };
 
-const createGridLayer = (bounds, gridSize) => {
+const createGridLayer = (bounds, gridSize = 200) => {  
   return L.gridLayer({
-    tileSize: L.point(gridSize, gridSize),
+    tileSize: L.point(gridSize, gridSize),  
     opacity: 0.4
   }).createTile = function(coords) {
     const tile = L.DomUtil.create('canvas', 'leaflet-tile');
@@ -81,7 +82,7 @@ const createGridLayer = (bounds, gridSize) => {
     
     // Draw grid lines
     ctx.strokeStyle = '#28a745';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2;  
     
     // Draw vertical line
     ctx.beginPath();
@@ -95,8 +96,60 @@ const createGridLayer = (bounds, gridSize) => {
     ctx.lineTo(size.x, size.y);
     ctx.stroke();
     
+    // Add click event listener to highlight and simulate
+    tile.addEventListener('click', () => {
+      console.log('Grid cell clicked:', coords);
+      
+      // Highlight the grid cell
+      ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+      ctx.fillRect(0, 0, size.x, size.y);
+      
+      // Perform simulation for this grid
+      simulateGrid(coords);
+    });
+    
     return tile;
   };
+};
+
+// Function to simulate grid
+const simulateGrid = (coords) => {
+  // Implement simulation logic here
+  console.log('Simulating grid at:', coords);
+};
+
+// Add a safe dispose helper function
+const safeDispose = (object) => {
+  if (!object) return;
+  
+  if (object.geometry) {
+    object.geometry.dispose();
+  }
+  
+  if (object.material) {
+    if (Array.isArray(object.material)) {
+      object.material.forEach(material => {
+        if (material.map) material.map.dispose();
+        material.dispose();
+      });
+    } else {
+      if (object.material.map) object.material.map.dispose();
+      object.material.dispose();
+    }
+  }
+};
+
+// Add these texture URLs at the top with other constants
+const TEXTURE_URLS = {
+  ground: {
+    color: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/terrain/grasslight-big.jpg',
+    normal: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/terrain/grasslight-big-nm.jpg',
+    roughness: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/terrain/grasslight-big-ao.jpg'
+  },
+  sprinkler: {
+    metal: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/metal.jpg',
+    metalNormal: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/metal_normal.jpg'
+  }
 };
 
 const FarmSimulation = () => {
@@ -117,7 +170,6 @@ const FarmSimulation = () => {
 
   const [selectedSector, setSelectedSector] = useState('sector1');
   const [selectedPlant, setSelectedPlant] = useState('wheat');
-  const [showHighlights, setShowHighlights] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isHighQuality, setIsHighQuality] = useState(false);
   const [soilComposition, setSoilComposition] = useState({
@@ -126,6 +178,19 @@ const FarmSimulation = () => {
     clay: 34
   });
   const [isDataLoading, setIsDataLoading] = useState(true);
+
+  // Add state for selected grid cell
+  const [selectedGridCell, setSelectedGridCell] = useState(null);
+  const gridRef = useRef([]);
+
+  // Add state for tracking selected cell coordinates
+  const [selectedCellCoords, setSelectedCellCoords] = useState(null);
+
+  // Add state to track active farm sectors
+  const [activeFarmSectors, setActiveFarmSectors] = useState(DEFAULT_FARM_SECTORS);
+
+  // Add new state for metrics display
+  const [showMetrics, setShowMetrics] = useState(false);
 
   // Load saved data from localStorage
   const loadSavedData = useCallback(() => {
@@ -179,165 +244,186 @@ const FarmSimulation = () => {
 
   // Initialize polygon map
   useEffect(() => {
-    if (!polygonMapRef.current) {
-      const map = L.map('polygon-preview', {
-        center: [20.5937, 78.9629], // Center of India
-        zoom: 5,
-        zoomControl: false,
-        dragging: false,
-        scrollWheelZoom: false
-      });
+    // Ensure the container exists and has dimensions
+    const container = document.getElementById('polygon-preview');
+    if (!container) return;
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'OpenStreetMap contributors'
-      }).addTo(map);
+    // Set a small timeout to ensure the container is fully rendered
+    const initializeMap = setTimeout(() => {
+      if (!polygonMapRef.current && container) {
+        const map = L.map('polygon-preview', {
+          center: [20.5937, 78.9629],
+          zoom: 5,
+          zoomControl: true,
+          dragging: true,
+          scrollWheelZoom: true
+        });
 
-      polygonMapRef.current = map;
-    }
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: 'OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Create polygon layer if points exist
+        if (polygonPoints.length >= 3) {
+          // Create the main polygon
+          const polygon = L.polygon(polygonPoints, {
+            color: '#28a745',
+            weight: 2,
+            fillOpacity: 0.1
+          }).addTo(map);
+
+          // Get polygon bounds
+          const bounds = polygon.getBounds();
+          
+          // Calculate grid size based on polygon area
+          const gridSize = 10;
+          const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
+          const lngStep = (bounds.getEast() - bounds.getWest()) / gridSize;
+
+          // Store grid cells with their coordinates
+          const gridCells = [];
+
+          // Helper function to check if point is inside polygon
+          const isPointInPolygon = (point, poly) => {
+            const polyPoints = poly.getLatLngs()[0];
+            let inside = false;
+            
+            for (let i = 0, j = polyPoints.length - 1; i < polyPoints.length; j = i++) {
+              const xi = polyPoints[i].lat, yi = polyPoints[i].lng;
+              const xj = polyPoints[j].lat, yj = polyPoints[j].lng;
+              
+              const intersect = ((yi > point[1]) !== (yj > point[1])) &&
+                (point[0] < (xj - xi) * (point[1] - yi) / (yj - yi) + xi);
+              
+              if (intersect) inside = !inside;
+            }
+            
+            return inside;
+          };
+
+          // Create grid cells
+          for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+              const cellBounds = [
+                [bounds.getSouth() + latStep * row, bounds.getWest() + lngStep * col],
+                [bounds.getSouth() + latStep * (row + 1), bounds.getWest() + lngStep * (col + 1)]
+              ];
+
+              // Check if cell corners are inside polygon
+              const corners = [
+                [cellBounds[0][0], cellBounds[0][1]], // Southwest
+                [cellBounds[0][0], cellBounds[1][1]], // Southeast
+                [cellBounds[1][0], cellBounds[1][1]], // Northeast
+                [cellBounds[1][0], cellBounds[0][1]]  // Northwest
+              ];
+
+              // Only create cell if at least one corner is inside the polygon
+              if (corners.some(corner => isPointInPolygon(corner, polygon))) {
+                const rectangle = L.rectangle(cellBounds, {
+                  color: '#28a745',
+                  weight: 1,
+                  fillOpacity: 0.2
+                }).addTo(map);
+
+                // Store cell info
+                gridCells.push({
+                  rectangle,
+                  coords: { row, col }
+                });
+
+                // Add click handler
+                rectangle.on('click', () => {
+                  // Reset all cells to default style
+                  gridCells.forEach(cell => {
+                    cell.rectangle.setStyle({
+                      color: '#28a745',
+                      fillOpacity: 0.2
+                    });
+                  });
+
+                  // Highlight clicked cell
+                  rectangle.setStyle({
+                    color: '#dc3545',
+                    fillOpacity: 0.4
+                  });
+
+                  // Update selected cell state
+                  setSelectedCellCoords({ row, col });
+                  setSelectedGridCell(rectangle);
+
+                  // Calculate cell size in meters (using a fixed size for now)
+                  const cellSize = 50; // 50 meters per cell
+                  const sectorKey = `sector${row}-${col}`;
+                  
+                  // Create new sectors object with only the selected grid cell
+                  const newSectors = {
+                    [sectorKey]: {
+                      name: `Grid Cell ${row}-${col}`,
+                      size: cellSize,
+                      soil: { clay: 33, silt: 33, sand: 34 }
+                    }
+                  };
+
+                  // Update active sectors
+                  setActiveFarmSectors(newSectors);
+
+                  // Select the new sector
+                  setSelectedSector(sectorKey);
+                });
+              }
+            }
+          }
+
+          // Store grid cells reference
+          gridRef.current = gridCells;
+
+          // Fit map to polygon bounds
+          map.fitBounds(bounds);
+        }
+
+        polygonMapRef.current = map;
+        
+        // Force a map invalidation and redraw
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 100);
+      }
+    }, 100);
 
     return () => {
+      clearTimeout(initializeMap);
       if (polygonMapRef.current) {
+        // Clear grid cells
+        if (gridRef.current.length > 0) {
+          gridRef.current.forEach(cell => cell.rectangle.remove());
+        }
+        gridRef.current = [];
         polygonMapRef.current.remove();
         polygonMapRef.current = null;
       }
     };
-  }, []);
-
-  // Update polygon on map when points change
-  useEffect(() => {
-    if (polygonMapRef.current && polygonPoints.length > 0) {
-      // Remove existing polygon and grid
-      if (polygonLayerRef.current) {
-        polygonLayerRef.current.remove();
-      }
-
-      // Create new polygon
-      const polygon = L.polygon(polygonPoints, {
-        color: '#28a745',
-        weight: 2,
-        fillColor: '#28a745',
-        fillOpacity: 0.3
-      });
-
-      // Get bounds of the polygon
-      const bounds = polygon.getBounds();
-      
-      // Create SVG element for the grid
-      const svg = L.svg().addTo(polygonMapRef.current);
-      const svgElement = svg._container;
-      
-      // Create clipPath element
-      const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
-      clipPath.setAttribute('id', 'polygon-clip');
-      
-      // Create path element for the polygon
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      const latLngs = polygon.getLatLngs()[0];
-      const points = latLngs.map(ll => {
-        const point = polygonMapRef.current.latLngToLayerPoint(ll);
-        return `${point.x},${point.y}`;
-      }).join(' ');
-      path.setAttribute('d', `M ${points} Z`);
-      clipPath.appendChild(path);
-      svgElement.appendChild(clipPath);
-      
-      // Create grid group
-      const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      gridGroup.setAttribute('clip-path', 'url(#polygon-clip)');
-      
-      // Calculate grid lines
-      const topLeft = polygonMapRef.current.latLngToLayerPoint(bounds.getNorthWest());
-      const bottomRight = polygonMapRef.current.latLngToLayerPoint(bounds.getSouthEast());
-      
-      // Convert 50 meters to pixels at the current zoom level
-      const metersPerPixel = 40075016.686 * Math.abs(Math.cos(bounds.getCenter().lat * Math.PI/180)) / Math.pow(2, polygonMapRef.current.getZoom() + 8);
-      const gridSizeInPixels = 50 / metersPerPixel;
-      
-      // Create vertical lines
-      for (let x = topLeft.x; x <= bottomRight.x; x += gridSizeInPixels) {
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', x);
-        line.setAttribute('y1', topLeft.y);
-        line.setAttribute('x2', x);
-        line.setAttribute('y2', bottomRight.y);
-        line.setAttribute('stroke', '#28a745');
-        line.setAttribute('stroke-width', '1');
-        line.setAttribute('stroke-opacity', '0.5');
-        gridGroup.appendChild(line);
-      }
-      
-      // Create horizontal lines
-      for (let y = topLeft.y; y <= bottomRight.y; y += gridSizeInPixels) {
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', topLeft.x);
-        line.setAttribute('y1', y);
-        line.setAttribute('x2', bottomRight.x);
-        line.setAttribute('y2', y);
-        line.setAttribute('stroke', '#28a745');
-        line.setAttribute('stroke-width', '1');
-        line.setAttribute('stroke-opacity', '0.5');
-        gridGroup.appendChild(line);
-      }
-      
-      svgElement.appendChild(gridGroup);
-      
-      // Update grid on zoom/pan
-      polygonMapRef.current.on('zoomend moveend', () => {
-        // Update clipPath
-        const newPoints = latLngs.map(ll => {
-          const point = polygonMapRef.current.latLngToLayerPoint(ll);
-          return `${point.x},${point.y}`;
-        }).join(' ');
-        path.setAttribute('d', `M ${newPoints} Z`);
-        
-        // Update grid lines
-        const newTopLeft = polygonMapRef.current.latLngToLayerPoint(bounds.getNorthWest());
-        const newBottomRight = polygonMapRef.current.latLngToLayerPoint(bounds.getSouthEast());
-        const newMetersPerPixel = 40075016.686 * Math.abs(Math.cos(bounds.getCenter().lat * Math.PI/180)) / Math.pow(2, polygonMapRef.current.getZoom() + 8);
-        const newGridSizeInPixels = 50 / newMetersPerPixel;
-        
-        // Remove old grid lines
-        while (gridGroup.firstChild) {
-          gridGroup.removeChild(gridGroup.firstChild);
-        }
-        
-        // Create new vertical lines
-        for (let x = newTopLeft.x; x <= newBottomRight.x; x += newGridSizeInPixels) {
-          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-          line.setAttribute('x1', x);
-          line.setAttribute('y1', newTopLeft.y);
-          line.setAttribute('x2', x);
-          line.setAttribute('y2', newBottomRight.y);
-          line.setAttribute('stroke', '#28a745');
-          line.setAttribute('stroke-width', '1');
-          line.setAttribute('stroke-opacity', '0.5');
-          gridGroup.appendChild(line);
-        }
-        
-        // Create new horizontal lines
-        for (let y = newTopLeft.y; y <= newBottomRight.y; y += newGridSizeInPixels) {
-          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-          line.setAttribute('x1', newTopLeft.x);
-          line.setAttribute('y1', y);
-          line.setAttribute('x2', newBottomRight.x);
-          line.setAttribute('y2', y);
-          line.setAttribute('stroke', '#28a745');
-          line.setAttribute('stroke-width', '1');
-          line.setAttribute('stroke-opacity', '0.5');
-          gridGroup.appendChild(line);
-        }
-      });
-
-      // Add polygon to map and fit bounds
-      polygon.addTo(polygonMapRef.current);
-      polygonMapRef.current.fitBounds(polygon.getBounds());
-      polygonLayerRef.current = polygon;
-    }
   }, [polygonPoints]);
 
-  // Calculate number of plants and sprinklers based on soil composition and sector size
+  // Update sector select options to use active farm sectors
+  const sectorOptions = useMemo(() => {
+    return Object.entries(activeFarmSectors).map(([key, sector]) => ({
+      key,
+      name: sector.name,
+      size: sector.size
+    }));
+  }, [activeFarmSectors]);
+
+  // Add effect to reset to default sectors when grid cell is deselected
+  useEffect(() => {
+    if (!selectedGridCell) {
+      setActiveFarmSectors(DEFAULT_FARM_SECTORS);
+      setSelectedSector('sector1');
+    }
+  }, [selectedGridCell]);
+
+  // Update layoutConfig to use activeFarmSectors instead of FARM_SECTORS
   const layoutConfig = useMemo(() => {
-    const sector = FARM_SECTORS[selectedSector];
+    const sector = activeFarmSectors[selectedSector];
     const plantArea = STANDARD_AREAS[selectedPlant];
     const totalArea = sector.size * sector.size;
     
@@ -361,7 +447,7 @@ const FarmSimulation = () => {
       plantSpacing: Math.sqrt(plantArea),
       gridSize: Math.floor(Math.sqrt(actualPlants))
     };
-  }, [selectedSector, selectedPlant]);
+  }, [selectedSector, selectedPlant, activeFarmSectors]);
 
   
   // Add loading manager to track asset loading
@@ -394,9 +480,7 @@ const FarmSimulation = () => {
           // Ensure materials are properly loaded
           plant.traverse((child) => {
             if (child.isMesh) {
-              // Keep the original materials from the GLB
               child.material.needsUpdate = true;
-              // Enable shadows
               child.castShadow = true;
               child.receiveShadow = true;
             }
@@ -415,15 +499,114 @@ const FarmSimulation = () => {
       );
     });
   } else {
+      // Enhanced low-quality plant representation
+      const plantGroup = new THREE.Group();
     const layout = PLANT_LAYOUTS[type];
-    const geometry = new THREE.CylinderGeometry(
+
+      // Create stem
+      const stemGeometry = new THREE.CylinderGeometry(
+        layout.scale * 0.05,  // top radius
+        layout.scale * 0.08,  // bottom radius
+        layout.height,        // height
+        6                     // segments
+      );
+      const stemMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22 }); // Dark green for stem
+      const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+      stem.position.y = layout.height / 2;
+      plantGroup.add(stem);
+
+      // Create main foliage based on plant type
+      switch(type) {
+        case 'wheat':
+          // Create wheat head
+          const headGeometry = new THREE.ConeGeometry(
+            layout.scale * 0.15,    // radius
+            layout.height * 0.4,    // height
+            8                       // segments
+          );
+          const headMaterial = new THREE.MeshBasicMaterial({ color: layout.color });
+          const head = new THREE.Mesh(headGeometry, headMaterial);
+          head.position.y = layout.height * 0.9;
+          plantGroup.add(head);
+          break;
+
+        case 'corn':
+          // Create corn leaves
+          for (let i = 0; i < 4; i++) {
+            const leafGeometry = new THREE.ConeGeometry(
+              layout.scale * 0.2,
+              layout.height * 0.6,
+              4
+            );
+            const leafMaterial = new THREE.MeshBasicMaterial({ color: layout.color });
+            const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+            leaf.position.y = layout.height * 0.6;
+            leaf.rotation.x = Math.PI * 0.15;
+            leaf.rotation.y = (Math.PI / 2) * i;
+            plantGroup.add(leaf);
+          }
+          break;
+
+        case 'soyabean':
+        case 'peas':
+          // Create bush-like structure
+          for (let i = 0; i < 5; i++) {
+            const leafGeometry = new THREE.SphereGeometry(
+              layout.scale * 0.15,
+              6,
+              6
+            );
+            const leafMaterial = new THREE.MeshBasicMaterial({ color: layout.color });
+            const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+            leaf.position.y = layout.height * 0.5 + Math.random() * 0.2;
+            leaf.position.x = (Math.random() - 0.5) * 0.2;
+            leaf.position.z = (Math.random() - 0.5) * 0.2;
+            plantGroup.add(leaf);
+          }
+          break;
+
+        case 'tomato':
+          // Create tomato plant structure
+          const mainFoliageGeometry = new THREE.SphereGeometry(
       layout.scale * 0.3,
+            8,
+            8
+          );
+          const tomatoFoliageMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22 });
+          const mainFoliage = new THREE.Mesh(mainFoliageGeometry, tomatoFoliageMaterial);
+          mainFoliage.position.y = layout.height * 0.7;
+          plantGroup.add(mainFoliage);
+
+          // Add tomatoes
+          for (let i = 0; i < 3; i++) {
+            const tomatoGeometry = new THREE.SphereGeometry(
       layout.scale * 0.1,
-      layout.height,
-      6
-    );
-    const material = new THREE.MeshBasicMaterial({ color: layout.color });
-    return new THREE.Mesh(geometry, material);
+              6,
+              6
+            );
+            const tomatoMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 });
+            const tomato = new THREE.Mesh(tomatoGeometry, tomatoMaterial);
+            tomato.position.y = layout.height * 0.6 + (Math.random() - 0.5) * 0.2;
+            tomato.position.x = (Math.random() - 0.5) * 0.4;
+            tomato.position.z = (Math.random() - 0.5) * 0.4;
+            plantGroup.add(tomato);
+          }
+          break;
+
+        default:
+          // Default plant shape
+          const defaultFoliageGeometry = new THREE.ConeGeometry(
+            layout.scale * 0.2,
+            layout.height * 0.6,
+            8
+          );
+          const defaultFoliageMaterial = new THREE.MeshBasicMaterial({ color: layout.color });
+          const defaultFoliage = new THREE.Mesh(defaultFoliageGeometry, defaultFoliageMaterial);
+          defaultFoliage.position.y = layout.height * 0.8;
+          plantGroup.add(defaultFoliage);
+      }
+
+      return plantGroup;
   }
 };
 
@@ -432,44 +615,92 @@ const FarmSimulation = () => {
     if (isHighQuality) {
       return new Promise((resolve, reject) => {
         const loader = new GLTFLoader(loadingManagerRef.current);
-        loader.load(
-          '/models/sprinkler.glb',
-          (gltf) => {
-            const sprinkler = gltf.scene;
-            
-            // Ensure materials are properly loaded
-            sprinkler.traverse((child) => {
-              if (child.isMesh) {
-                // Keep the original materials from the GLB
-                child.material.needsUpdate = true;
-                // Enable shadows
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
-  
-            sprinkler.scale.set(1, 1, 1);
-            resolve(sprinkler);
-          },
-          undefined,
-          reject
-        );
+        const textureLoader = new TextureLoader(loadingManagerRef.current);
+        
+        // Create a more detailed sprinkler model
+        const sprinklerGroup = new THREE.Group();
+        
+        // Load metal textures
+        const metalTexture = textureLoader.load(TEXTURE_URLS.sprinkler.metal);
+        const metalNormalTexture = textureLoader.load(TEXTURE_URLS.sprinkler.metalNormal);
+        
+        // Create base
+        const baseGeometry = new THREE.CylinderGeometry(0.3, 0.4, 0.4, 16);
+        const baseMaterial = new THREE.MeshStandardMaterial({
+          map: metalTexture,
+          normalMap: metalNormalTexture,
+          metalness: 0.8,
+          roughness: 0.2
+        });
+        const base = new THREE.Mesh(baseGeometry, baseMaterial);
+        base.castShadow = true;
+        base.receiveShadow = true;
+        
+        // Create stem
+        const stemGeometry = new THREE.CylinderGeometry(0.1, 0.15, 1.2, 12);
+        const stem = new THREE.Mesh(stemGeometry, baseMaterial.clone());
+        stem.position.y = 0.8;
+        stem.castShadow = true;
+        
+        // Create head
+        const headGeometry = new THREE.SphereGeometry(0.25, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        const headMaterial = new THREE.MeshStandardMaterial({
+          map: metalTexture,
+          normalMap: metalNormalTexture,
+          metalness: 0.9,
+          roughness: 0.1
+        });
+        const head = new THREE.Mesh(headGeometry, headMaterial);
+        head.position.y = 1.4;
+        head.castShadow = true;
+        
+        // Create nozzles
+        for (let i = 0; i < 6; i++) {
+          const nozzleGeometry = new THREE.CylinderGeometry(0.03, 0.02, 0.1, 8);
+          const nozzle = new THREE.Mesh(nozzleGeometry, headMaterial.clone());
+          nozzle.position.y = 1.4;
+          nozzle.rotation.x = Math.PI / 4;
+          nozzle.rotation.y = (i / 6) * Math.PI * 2;
+          nozzle.position.x = Math.cos(nozzle.rotation.y) * 0.2;
+          nozzle.position.z = Math.sin(nozzle.rotation.y) * 0.2;
+          nozzle.castShadow = true;
+          sprinklerGroup.add(nozzle);
+        }
+        
+        sprinklerGroup.add(base);
+        sprinklerGroup.add(stem);
+        sprinklerGroup.add(head);
+        
+        resolve(sprinklerGroup);
       });
     } else {
+      // Low quality version
       const sprinklerGroup = new THREE.Group();
-      const base = new THREE.CylinderGeometry(0.2, 0.3, 0.3, 8);
-      const baseMesh = new THREE.Mesh(
-        base,
-        new THREE.MeshBasicMaterial({ color: 0x696969 })
+      
+      // Simplified base
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.2, 0.3, 0.3, 8),
+        new THREE.MeshBasicMaterial({ color: 0x888888 })
       );
-      const head = new THREE.SphereGeometry(0.15, 8, 8);
-      const headMesh = new THREE.Mesh(
-        head,
-        new THREE.MeshBasicMaterial({ color: 0x808080 })
+      
+      // Simplified stem
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.1, 0.1, 1, 8),
+        new THREE.MeshBasicMaterial({ color: 0x666666 })
       );
-      headMesh.position.y = 0.3;
-      sprinklerGroup.add(baseMesh);
-      sprinklerGroup.add(headMesh);
+      stem.position.y = 0.6;
+      
+      // Simplified head
+      const head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0x444444 })
+      );
+      head.position.y = 1.2;
+      
+      sprinklerGroup.add(base);
+      sprinklerGroup.add(stem);
+      sprinklerGroup.add(head);
+      
       return sprinklerGroup;
     }
   };
@@ -530,40 +761,43 @@ const FarmSimulation = () => {
   };
 
 
-  // Modified ground creation with proper texture loading
+  // Modified ground creation with enhanced textures
   const createGround = (scene, size) => {
-    const geometry = new THREE.PlaneGeometry(size, size);
+    const geometry = new THREE.PlaneGeometry(size, size, 100, 100);
     let material;
 
     if (isHighQuality) {
       const textureLoader = new TextureLoader(loadingManagerRef.current);
-      const texture = textureLoader.load('/assets/ground.jpg',
-        // onLoad callback
-        (texture) => {
+      
+      // Load all ground textures
+      const colorTexture = textureLoader.load(TEXTURE_URLS.ground.color);
+      const normalTexture = textureLoader.load(TEXTURE_URLS.ground.normal);
+      const roughnessTexture = textureLoader.load(TEXTURE_URLS.ground.roughness);
+      
+      // Configure texture settings
+      [colorTexture, normalTexture, roughnessTexture].forEach(texture => {
           texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-          texture.repeat.set(4, 4); // Adjust based on your needs
-          material.needsUpdate = true;
-        },
-        undefined,
-        (error) => {
-          console.error('Error loading ground texture:', error);
-          // Fallback to low quality
-          material.color.set(0xB8860B);
-        }
-      );
-      material = new THREE.MeshBasicMaterial({ 
-        map: texture, 
+        texture.repeat.set(size/10, size/10); // Adjust repeat based on ground size
+      });
+
+      material = new THREE.MeshStandardMaterial({ 
+        map: colorTexture,
+        normalMap: normalTexture,
+        roughnessMap: roughnessTexture,
+        roughness: 0.8,
+        metalness: 0.1,
         side: THREE.DoubleSide 
       });
     } else {
       material = new THREE.MeshBasicMaterial({ 
-        color: 0xB8860B, 
+        color: 0x567d46,
         side: THREE.DoubleSide 
       });
     }
 
     const ground = new THREE.Mesh(geometry, material);
     ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
     scene.add(ground);
     return ground;
   };
@@ -578,7 +812,7 @@ const FarmSimulation = () => {
       const plantTemplate = await createGeometricPlant(selectedPlant);
       const sprinklerTemplate = await createSprinkler();
       
-      const sectorSize = FARM_SECTORS[selectedSector].size;
+      const sectorSize = activeFarmSectors[selectedSector].size;
       const offset = sectorSize / 2;
       
       // Calculate soil quality factor considering all components
@@ -666,7 +900,7 @@ const FarmSimulation = () => {
     }
   };
 
-  const createMeasurements = (scene, sectorSize, plantSpacing, sprinklerRadius) => {
+  const createMeasurements = (scene, sectorSize, plantSpacing, sprinklerRadius, sprinklerInstances) => {
     const measurements = [];
     
     // Helper function to create text sprite
@@ -721,37 +955,201 @@ const FarmSimulation = () => {
     );
 
     // Create sprinkler coverage visualization for each sprinkler
-    sprinklersRef.current.forEach(sprinkler => {
-      const points = [];
-      const segments = 32;
-      for (let i = 0; i <= segments; i++) {
-        const theta = (i / segments) * Math.PI * 2;
-        points.push(new THREE.Vector3(
-          sprinkler.position.x + Math.cos(theta) * sprinklerRadius,
-          0.2,
-          sprinkler.position.z + Math.sin(theta) * sprinklerRadius
-        ));
-      }
-      const circleGeometry = new THREE.BufferGeometry().setFromPoints(points);
-      const circleMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF });
-      const circle = new THREE.Line(circleGeometry, circleMaterial);
-      scene.add(circle);
-      measurements.push(circle);
+    if (sprinklerInstances) {
+      sprinklerInstances.forEach(sprinkler => {
+        const points = [];
+        const segments = 32;
+        for (let i = 0; i <= segments; i++) {
+          const theta = (i / segments) * Math.PI * 2;
+          points.push(new THREE.Vector3(
+            sprinkler.position.x + Math.cos(theta) * sprinklerRadius,
+            0.2,
+            sprinkler.position.z + Math.sin(theta) * sprinklerRadius
+          ));
+        }
+        const circleGeometry = new THREE.BufferGeometry().setFromPoints(points);
+        const circleMaterial = new THREE.LineBasicMaterial({ 
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.8
+        });
+        const circle = new THREE.Line(circleGeometry, circleMaterial);
+        circle.position.copy(sprinkler.position);
+        scene.add(circle);
+        measurements.push(circle);
 
-      // Add coverage radius label for the first sprinkler only
-      if (sprinkler === sprinklersRef.current[0]) {
-        const radiusLabel = createTextSprite(`Coverage Radius: ${sprinklerRadius}m`);
-        radiusLabel.position.set(
-          sprinkler.position.x + sprinklerRadius/2,
-          1,
-          sprinkler.position.z
-        );
-        scene.add(radiusLabel);
-        measurements.push(radiusLabel);
-      }
-    });
+        // Add coverage radius label for the first sprinkler only
+        if (sprinkler === sprinklerInstances[0]) {
+          const radiusLabel = createTextSprite(`Coverage Radius: ${sprinklerRadius}m`);
+          radiusLabel.position.set(
+            sprinkler.position.x + sprinklerRadius/2,
+            1,
+            sprinkler.position.z
+          );
+          scene.add(radiusLabel);
+          measurements.push(radiusLabel);
+        }
+      });
+    }
 
     return measurements;
+  };
+
+  // Add new function for creating metric overlays
+  const createMetricOverlays = (scene, sectorSize, sprinklerInstances, plantInstances) => {
+    const overlays = [];
+    
+    // Helper function to create text sprite with background
+    const createInfoSprite = (message, position, scale = 1) => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = 512;
+        canvas.height = 128;
+        
+        // Draw background
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.strokeStyle = '#4CAF50';
+        context.lineWidth = 4;
+        context.strokeRect(2, 2, canvas.width-4, canvas.height-4);
+        
+        // Draw text
+        context.font = 'bold 24px Arial';
+        context.fillStyle = '#ffffff';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        
+        // Handle multi-line text
+        const lines = message.split('\n');
+        lines.forEach((line, i) => {
+            context.fillText(line, canvas.width/2, (canvas.height/(lines.length+1))*(i+1));
+        });
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.position.copy(position);
+        sprite.scale.set(scale * 4, scale, 1);
+        
+        return sprite;
+    };
+
+    // Create arrow helper for distance indicators
+    const createArrow = (start, end, color) => {
+        const direction = new THREE.Vector3().subVectors(end, start);
+        const length = direction.length();
+        direction.normalize();
+
+        const arrowHelper = new THREE.ArrowHelper(
+            direction,
+            start,
+            length,
+            color,
+            length * 0.2, // Head length
+            length * 0.1  // Head width
+        );
+        return arrowHelper;
+    };
+
+    // Calculate and display metrics for each sprinkler
+    sprinklerInstances.forEach((sprinkler, index) => {
+        const sprinklerPos = sprinkler.position;
+        const plantsInRange = plantInstances.filter(plant => {
+            const distance = plant.position.distanceTo(sprinklerPos);
+            return distance <= 8; // 8m sprinkler radius
+        });
+
+        // Create coverage circle (border only)
+        const segments = 64;
+        const points = [];
+        for (let i = 0; i <= segments; i++) {
+            const theta = (i / segments) * Math.PI * 2;
+            points.push(new THREE.Vector3(
+                Math.cos(theta) * 8, // 8m radius
+                0.1,                 // Slightly above ground
+                Math.sin(theta) * 8
+            ));
+        }
+        const circleGeometry = new THREE.BufferGeometry().setFromPoints(points);
+        const circleMaterial = new THREE.LineBasicMaterial({ 
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.8
+        });
+        const coverageCircle = new THREE.Line(circleGeometry, circleMaterial);
+        coverageCircle.position.copy(sprinklerPos);
+        scene.add(coverageCircle);
+        overlays.push(coverageCircle);
+
+        // Calculate coverage area
+        const coverageArea = Math.PI * 64; // πr², r = 8m
+
+        // Create info display
+        const infoText = `Sprinkler #${index + 1}\n` +
+                        `Plants in range: ${plantsInRange.length}\n` +
+                        `Coverage area: ${coverageArea.toFixed(1)}m²\n` +
+                        `Efficiency: ${((plantsInRange.length / coverageArea) * 100).toFixed(1)} plants/m²`;
+        
+        const infoSprite = createInfoSprite(
+            infoText,
+            new THREE.Vector3(sprinklerPos.x, 2, sprinklerPos.z),
+            1.5
+        );
+        
+        scene.add(infoSprite);
+        overlays.push(infoSprite);
+
+        // Draw arrow only to the nearest plant
+        if (plantsInRange.length > 0) {
+            const nearestPlant = plantsInRange.reduce((nearest, current) => {
+                const currentDistance = current.position.distanceTo(sprinklerPos);
+                const nearestDistance = nearest.position.distanceTo(sprinklerPos);
+                return currentDistance < nearestDistance ? current : nearest;
+            });
+
+            const distance = nearestPlant.position.distanceTo(sprinklerPos);
+            const startPos = new THREE.Vector3(sprinklerPos.x, 0.5, sprinklerPos.z);
+            const endPos = new THREE.Vector3(nearestPlant.position.x, 0.5, nearestPlant.position.z);
+            
+            // Create arrow with black color
+            const arrow = createArrow(startPos, endPos, 0x000000);
+            scene.add(arrow);
+            overlays.push(arrow);
+
+            // Add distance label
+            const midPoint = new THREE.Vector3().lerpVectors(startPos, endPos, 0.5);
+            midPoint.y = 1;
+            const distanceLabel = createInfoSprite(
+                `${distance.toFixed(1)}m`,
+                midPoint,
+                0.5
+            );
+            scene.add(distanceLabel);
+            overlays.push(distanceLabel);
+        }
+    });
+
+    // Add sector summary with enhanced information
+    const totalArea = sectorSize * sectorSize;
+    const plantDensity = plantInstances.length / totalArea;
+    const sprinklerDensity = sprinklerInstances.length / totalArea;
+    
+    const sectorInfo = `Field Summary\n` +
+                      `Total Area: ${totalArea.toFixed(1)}m²\n` +
+                      `Plant Count: ${plantInstances.length}\n` +
+                      `Plant Density: ${plantDensity.toFixed(2)} plants/m²\n` +
+                      `Sprinkler Count: ${sprinklerInstances.length}\n` +
+                      `Coverage Ratio: ${(sprinklerInstances.length * Math.PI * 64 / totalArea).toFixed(2)}x`;
+    
+    const summarySprite = createInfoSprite(
+        sectorInfo,
+        new THREE.Vector3(0, 3, -sectorSize/2),
+        2
+    );
+    scene.add(summarySprite);
+    overlays.push(summarySprite);
+
+    return overlays;
   };
 
   useEffect(() => {
@@ -760,7 +1158,6 @@ const FarmSimulation = () => {
     let cleanupFunctions = [];
     
     const setup = async () => {
-        // Only show loading screen for high quality mode
         if (isHighQuality) {
             setIsLoading(true);
             
@@ -769,16 +1166,7 @@ const FarmSimulation = () => {
                 while(sceneRef.current.children.length > 0) { 
                     const object = sceneRef.current.children[0];
                     sceneRef.current.remove(object);
-                    
-                    // Properly dispose of materials and geometries
-                    if (object.material) {
-                        if (Array.isArray(object.material)) {
-                            object.material.forEach(material => material.dispose());
-                        } else {
-                            object.material.dispose();
-                        }
-                    }
-                    if (object.geometry) object.geometry.dispose();
+                    safeDispose(object);
                 }
             }
         } else {
@@ -801,70 +1189,65 @@ const FarmSimulation = () => {
         controls.enableKeys = false;
         controlsRef.current = controls;
 
-        const ground = createGround(scene, FARM_SECTORS[selectedSector].size);
+        const ground = createGround(scene, activeFarmSectors[selectedSector].size);
         cleanupFunctions.push(() => {
-            ground.geometry.dispose();
-            ground.material.dispose();
-            if (ground.material.map) {
-                ground.material.map.dispose();
+            if (ground) {
+                safeDispose(ground);
             }
         });
 
         try {
-            // Create farm elements
             const { plantInstances, sprinklerInstances } = await createFarmElements(scene, layoutConfig);
             plantsRef.current = plantInstances;
             sprinklersRef.current = sprinklerInstances;
-
-            // Create measurements if showHighlights is true
-            if (showHighlights) {
-                const sectorSize = FARM_SECTORS[selectedSector].size;
-                const plantSpacing = PLANT_LAYOUTS[selectedPlant].spacing;
-                const sprinklerRadius = 8; // Standard sprinkler coverage radius
-
-                // Clear any existing measurements
-                if (measurementsRef.current.length > 0) {
-                    measurementsRef.current.forEach(measurement => {
-                        if (measurement.geometry) measurement.geometry.dispose();
-                        if (measurement.material) measurement.material.dispose();
-                        scene.remove(measurement);
-                    });
-                    measurementsRef.current = [];
-                }
-
-                // Create new measurements
-                measurementsRef.current = createMeasurements(scene, sectorSize, plantSpacing, sprinklerRadius);
-
-                // Add cleanup for measurements
-                cleanupFunctions.push(() => {
-                    measurementsRef.current.forEach(measurement => {
-                        if (measurement.geometry) measurement.geometry.dispose();
-                        if (measurement.material) measurement.material.dispose();
-                        scene.remove(measurement);
-                    });
-                    measurementsRef.current = [];
-                });
-            }
             
-            // Only set loading to false after everything is loaded in high quality mode
+            // Add metrics overlays if enabled
+            let metricOverlays = [];
+            if (showMetrics) {
+                metricOverlays = createMetricOverlays(
+                    scene,
+                    activeFarmSectors[selectedSector].size,
+                    sprinklerInstances,
+                    plantInstances
+                );
+            }
+
+            // Add cleanup for metric overlays
+            cleanupFunctions.push(() => {
+                metricOverlays.forEach(overlay => {
+                    if (overlay.material) {
+                        if (overlay.material.map) {
+                            overlay.material.map.dispose();
+                        }
+                        overlay.material.dispose();
+                    }
+                    if (overlay.geometry) {
+                        overlay.geometry.dispose();
+                    }
+                    scene.remove(overlay);
+                });
+            });
+            
             if (isHighQuality) {
                 setIsLoading(false);
             }
             
             cleanupFunctions.push(() => {
+          if (plantInstances) {
                 plantInstances.forEach(plant => {
+              if (plant) {
                     if (isHighQuality) {
                         plant.traverse((child) => {
-                            if (child.isMesh) {
-                                child.geometry.dispose();
-                                child.material.dispose();
+                    if (child && child.isMesh) {
+                      safeDispose(child);
                             }
                         });
                     } else {
-                        plant.geometry.dispose();
-                        plant.material.dispose();
+                  safeDispose(plant);
+                }
                     }
                 });
+          }
                 sprinklersRef.current = [];
                 plantsRef.current = [];
             });
@@ -878,9 +1261,7 @@ const FarmSimulation = () => {
             animate();
         } catch (error) {
             console.error('Error in setup:', error);
-            setIsHighQuality(false);
             setIsLoading(false);
-            setup();
         }
     };
 
@@ -888,16 +1269,14 @@ const FarmSimulation = () => {
 
     return () => {
         cancelAnimationFrame(frameIdRef.current);
-        cleanupFunctions.forEach(cleanup => cleanup());
-        
-        // Clean up measurements
-        if (measurementsRef.current.length > 0) {
-            measurementsRef.current.forEach(measurement => {
-                if (measurement.geometry) measurement.geometry.dispose();
-                if (measurement.material) measurement.material.dispose();
-                sceneRef.current?.remove(measurement);
-            });
-            measurementsRef.current = [];
+      if (cleanupFunctions) {
+        cleanupFunctions.forEach(cleanup => {
+          try {
+            cleanup();
+          } catch (error) {
+            console.warn('Error during cleanup:', error);
+          }
+        });
         }
         
         if (rendererRef.current) {
@@ -912,9 +1291,11 @@ const FarmSimulation = () => {
             sceneRef.current.clear();
         }
         
-        simulationRef.current?.removeChild(rendererRef.current?.domElement);
+      if (simulationRef.current && rendererRef.current) {
+        simulationRef.current.removeChild(rendererRef.current.domElement);
+      }
     };
-}, [selectedSector, selectedPlant, layoutConfig, soilComposition, isHighQuality, showHighlights]); // Added showHighlights dependency
+  }, [selectedSector, selectedPlant, layoutConfig, soilComposition, isHighQuality, showMetrics]);
 
 
   const handleQualityToggle = (value) => {
@@ -946,7 +1327,7 @@ const FarmSimulation = () => {
     if (!cameraRef.current) return;
     
     const camera = cameraRef.current;
-    const size = FARM_SECTORS[selectedSector].size;
+    const size = activeFarmSectors[selectedSector].size;
     
     const views = {
       top: [0, size, 0],
@@ -968,16 +1349,23 @@ const FarmSimulation = () => {
       backgroundColor: '#f5f5f5',
       borderRadius: '4px',
       margin: '10px 0'
+    },
+    polygonPreview: {
+      height: '400px',
+      width: '100%',
+      border: '1px solid #ccc',
+      borderRadius: '4px',
+      marginBottom: '20px'
     }
   };
 
   return (
     <div className="simulation-wrapper">
       <div className="simulation-content">
-        {/* Add polygon preview container */}
+        {/* Update polygon preview container with proper styling */}
         <div className="polygon-preview-container">
           <h3>Field Boundary</h3>
-          <div id="polygon-preview" className="polygon-preview"></div>
+          <div id="polygon-preview" style={styles.polygonPreview}></div>
         </div>
 
         <div className="simulation-container">
@@ -1048,9 +1436,9 @@ const FarmSimulation = () => {
               onChange={(e) => setSelectedSector(e.target.value)}
               className="sector-select"
             >
-              {Object.entries(FARM_SECTORS).map(([key, sector]) => (
+              {sectorOptions.map(({ key, name, size }) => (
                 <option key={key} value={key}>
-                  {sector.name} ({sector.size}m)
+                  {name} ({size}m)
                 </option>
               ))}
             </select>
@@ -1081,8 +1469,11 @@ const FarmSimulation = () => {
             <button onClick={() => setView('top')}>Top View</button>
             <button onClick={() => setView('side')}>Side View</button>
             <button onClick={() => setView('isometric')}>Isometric View</button>
-            <button onClick={() => setShowHighlights(!showHighlights)}>
-              {showHighlights ? 'Hide Grid' : 'Show Grid'}
+            <button 
+              onClick={() => setShowMetrics(!showMetrics)}
+              className={showMetrics ? 'active' : ''}
+            >
+              {showMetrics ? 'Hide Metrics' : 'Show Metrics'}
             </button>
           </div>
         </div>      
