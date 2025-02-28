@@ -1,17 +1,128 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Fertilisers.css'; 
-import AgriChatbot from './AgriChatbot'; // Import the chatbot component
+import AgriChatbot from './AgriChatbot';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Function to calculate polygon area using coordinates
+const calculatePolygonArea = (coordinates) => {
+  if (!coordinates || coordinates.length < 3) return 0;
+  
+  let area = 0;
+  for (let i = 0; i < coordinates.length; i++) {
+    const j = (i + 1) % coordinates.length;
+    area += coordinates[i].lng * coordinates[j].lat;
+    area -= coordinates[j].lng * coordinates[i].lat;
+  }
+  area = Math.abs(area) * 111.32 * 111.32 * Math.cos(coordinates[0].lat * Math.PI / 180) / 2;
+  // Convert square kilometers to acres
+  return area * 247.105;
+};
+
+// Initialize Gemini API with direct API key
+const GEMINI_API_KEY = 'AIzaSyCtM75vJXvJFJNx2R3-cZlCw6GrTbAjNIY';
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+// Function to get region based on coordinates
+const getRegion = (coordinates) => {
+  if (!coordinates || coordinates.length === 0) return null;
+  
+  // Calculate center point of the field
+  const centerLat = coordinates.reduce((sum, point) => sum + point.lat, 0) / coordinates.length;
+  const centerLng = coordinates.reduce((sum, point) => sum + point.lng, 0) / coordinates.length;
+  
+  // Indian states rough boundaries (simplified)
+  if (centerLat >= 18 && centerLat <= 26 && centerLng >= 72 && centerLng <= 78) return "Maharashtra";
+  if (centerLat >= 20 && centerLat <= 26 && centerLng >= 76 && centerLng <= 82) return "Madhya Pradesh";
+  // Add more states as needed
+  return "India"; // Default
+};
+
+// Common fertilizer brands by region
+const getFertilizerBrands = (region) => {
+  const brands = {
+    "Maharashtra": {
+      "NPK": ["Suphala by RCF", "Sampurna by IFFCO", "Ujjwala by NFL"],
+      "Urea": ["IFFCO Urea Gold", "Sagar Urea", "Krishak Bharati Urea"],
+      "Organic": ["Dharti Amrit", "Bio-Gold Organic", "Kisan Organic"]
+    },
+    "Madhya Pradesh": {
+      "NPK": ["Mangala by IFFCO", "Navratna by NFL", "MPK Special"],
+      "Urea": ["MP Agro Urea", "Chambal Urea", "Kisan Urea Gold"],
+      "Organic": ["MP Organic Gold", "Krishi Utpad", "Green MP"]
+    },
+    "India": {
+      "NPK": ["IFFCO NPK", "NFL Kisan", "RCF Suphala"],
+      "Urea": ["IFFCO Urea", "NFL Urea", "Kisan Urea"],
+      "Organic": ["Organic India", "Bio-Fertilizer Plus", "Green Gold"]
+    }
+  };
+  return brands[region] || brands["India"];
+};
+
+// Function to get AI recommendation
+const getAIRecommendation = async (soilN, soilP, soilK, plant, polygonCoordinates) => {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const area = calculatePolygonArea(polygonCoordinates).toFixed(2);
+    const region = getRegion(polygonCoordinates);
+    const brands = getFertilizerBrands(region);
+
+    const prompt = `Provide a detailed fertilizer recommendation for:
+Crop: ${plant}
+Current Soil: N=${soilN}%, P=${soilP}%, K=${soilK}%
+Area: ${area} acres
+Region: ${region}
+
+Available local fertilizer brands:
+NPK Fertilizers: ${brands.NPK.join(', ')}
+Urea Products: ${brands.Urea.join(', ')}
+Organic Options: ${brands.Organic.join(', ')}
+
+Give exactly 7 lines of recommendations:
+1. Recommended NPK ratio
+2. Specific fertilizer brands to use (choose from available brands)
+3. Total fertilizer quantity needed (kg)
+4. Primary application schedule
+5. Secondary application timing (if needed)
+6. Application method and precautions
+7. Expected yield impact with proper application
+
+Keep each line under 20 words. No special formatting or symbols.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error('Gemini API Error:', error);
+    throw new Error('Failed to get AI recommendation. Please try again.');
+  }
+};
 
 const Fertilisers = () => {
   const [plant, setPlant] = useState('');
   const [soilN, setSoilN] = useState('');
   const [soilP, setSoilP] = useState('');
   const [soilK, setSoilK] = useState('');
-  const [landArea, setLandArea] = useState('');
-  const [recommendation, setRecommendation] = useState('');
-  const [fertiliserAmount, setFertiliserAmount] = useState('');
   const [error, setError] = useState('');
   const [plantImage, setPlantImage] = useState('');
+  const [polygonCoordinates, setPolygonCoordinates] = useState([]);
+  const [aiRecommendation, setAiRecommendation] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load polygon coordinates from localStorage
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem('mapAnalysisData');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        if (parsedData.points && parsedData.points.length > 0) {
+          setPolygonCoordinates(parsedData.points);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading polygon data:', error);
+    }
+  }, []);
 
   // Fertiliser recommendations and images based on plant type
   const fertiliserRecommendations = {
@@ -45,45 +156,60 @@ const Fertilisers = () => {
 
   const handlePlantChange = (e) => {
     setPlant(e.target.value);
-    setRecommendation('');
-    setFertiliserAmount('');
-    setPlantImage('');
     setError('');
+    setAiRecommendation('');
   };
 
-  // Generate recommendation based on plant and soil inputs
-  const handleRecommendation = () => {
-    if (!plant) {
-      setError('Please select a plant type.');
-      return;
+  // Modified handleRecommendation function
+  const handleRecommendation = async () => {
+    try {
+      if (!plant) {
+        setError('Please select a plant type.');
+        return;
+      }
+
+      if (soilN === '' || soilP === '' || soilK === '') {
+        setError('Please enter values for all soil contents.');
+        return;
+      }
+
+      if (soilN < 0 || soilN > 100 || soilP < 0 || soilP > 100 || soilK < 0 || soilK > 100) {
+        setError('Soil content values must be between 0 and 100.');
+        return;
+      }
+
+      if (!polygonCoordinates || polygonCoordinates.length < 3) {
+        setError('Please select a valid field area on the map first.');
+        return;
+      }
+
+      setError('');
+      setIsLoading(true);
+
+      // Set plant image
+      const plantInfo = fertiliserRecommendations[plant] || {};
+      setPlantImage(plantInfo.image);
+
+      // Get AI recommendation
+      try {
+        const aiResponse = await getAIRecommendation(
+          soilN,
+          soilP,
+          soilK,
+          plant,
+          polygonCoordinates
+        );
+        setAiRecommendation(aiResponse);
+      } catch (error) {
+        console.error('AI Recommendation Error:', error);
+        setError(error.message);
+      }
+    } catch (error) {
+      console.error('Recommendation Error:', error);
+      setError('An error occurred while generating recommendations.');
+    } finally {
+      setIsLoading(false);
     }
-
-    if (soilN === '' || soilP === '' || soilK === '') {
-      setError('Please enter values for all soil contents.');
-      return;
-    }
-
-    if (soilN < 0 || soilN > 100 || soilP < 0 || soilP > 100 || soilK < 0 || soilK > 100) {
-      setError('Soil content values must be between 0 and 100.');
-      return;
-    }
-
-    if (landArea === '' || landArea <= 0) {
-      setError('Please enter a valid land area.');
-      return;
-    }
-
-    setError('');
-    const { recommendation: plantRecommendation, image } = fertiliserRecommendations[plant] || {};
-    setRecommendation(plantRecommendation || 'No recommendation available.');
-
-    // Calculate the amount of fertiliser needed based on land area (example: 100 kg per acre)
-    const fertiliserPerAcre = 100; // Define how much fertiliser is needed per acre
-    const amountNeeded = landArea * fertiliserPerAcre;
-    setFertiliserAmount(amountNeeded.toFixed(2));
-
-    // Set the plant image URL
-    setPlantImage(image);
   };
 
   return (
@@ -141,17 +267,12 @@ const Fertilisers = () => {
           />
         </div>
 
-        <div className="input-group">
-          <label className="input-label">Land Area (acres)</label>
-          <input
-            type="number"
-            value={landArea}
-            onChange={(e) => setLandArea(e.target.value)}
-            className="input"
-            placeholder="Enter land area in acres"
-            min="1"
-          />
-        </div>
+        {polygonCoordinates.length > 0 && (
+          <div className="area-display">
+            <label className="input-label">Field Area:</label>
+            <span className="area-value">{calculatePolygonArea(polygonCoordinates).toFixed(2)} acres</span>
+          </div>
+        )}
 
         <button
           onClick={handleRecommendation}
@@ -165,12 +286,31 @@ const Fertilisers = () => {
 
       {/* Right Section: Output */}
       <div className="right-section">
-        <h2 className="section-title">Recommended Fertiliser</h2>
-        {recommendation ? (
+        <h2 className="section-title">Fertilizer Recommendation</h2>
+        {isLoading ? (
+          <div className="loading-indicator">
+            <p>Analyzing soil data and local fertilizer availability for precise recommendations...</p>
+          </div>
+        ) : aiRecommendation ? (
           <div className="recommendation-box">
             <h3 className="plant-title">{plant.toUpperCase()}</h3>
-            <p className="recommendation-text">{recommendation}</p>
-            <p className="fertiliser-amount">Amount of Fertiliser Needed: <span>{fertiliserAmount} kg</span></p>
+            <div className="recommendations">
+              <div className="ai-recommendation">
+                <h4>Precise Fertilizer Analysis</h4>
+                <div className="location-info">
+                  <p>Region: {getRegion(polygonCoordinates)}</p>
+                  <p>Area: {calculatePolygonArea(polygonCoordinates).toFixed(2)} acres</p>
+                </div>
+                <div className="ai-content">
+                  {aiRecommendation.split('\n').map((line, index) => (
+                    <p key={index} className="recommendation-detail">
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
             {plantImage && (
               <div className="plant-image-container">
                 <img src={plantImage} alt={`${plant} plant`} className="plant-image" />

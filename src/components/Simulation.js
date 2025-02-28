@@ -251,17 +251,17 @@ const FarmSimulation = () => {
     // Set a small timeout to ensure the container is fully rendered
     const initializeMap = setTimeout(() => {
       if (!polygonMapRef.current && container) {
-        const map = L.map('polygon-preview', {
+      const map = L.map('polygon-preview', {
           center: [20.5937, 78.9629],
-          zoom: 5,
+        zoom: 5,
           zoomControl: true,
           dragging: true,
           scrollWheelZoom: true
         });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: 'OpenStreetMap contributors'
-        }).addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'OpenStreetMap contributors'
+      }).addTo(map);
 
         // Create polygon layer if points exist
         if (polygonPoints.length >= 3) {
@@ -320,7 +320,7 @@ const FarmSimulation = () => {
               // Only create cell if at least one corner is inside the polygon
               if (corners.some(corner => isPointInPolygon(corner, polygon))) {
                 const rectangle = L.rectangle(cellBounds, {
-                  color: '#28a745',
+        color: '#28a745',
                   weight: 1,
                   fillOpacity: 0.2
                 }).addTo(map);
@@ -957,39 +957,39 @@ const FarmSimulation = () => {
     // Create sprinkler coverage visualization for each sprinkler
     if (sprinklerInstances) {
       sprinklerInstances.forEach(sprinkler => {
-        const points = [];
-        const segments = 32;
-        for (let i = 0; i <= segments; i++) {
-          const theta = (i / segments) * Math.PI * 2;
-          points.push(new THREE.Vector3(
-            sprinkler.position.x + Math.cos(theta) * sprinklerRadius,
-            0.2,
-            sprinkler.position.z + Math.sin(theta) * sprinklerRadius
-          ));
-        }
-        const circleGeometry = new THREE.BufferGeometry().setFromPoints(points);
+      const points = [];
+      const segments = 32;
+      for (let i = 0; i <= segments; i++) {
+        const theta = (i / segments) * Math.PI * 2;
+        points.push(new THREE.Vector3(
+          sprinkler.position.x + Math.cos(theta) * sprinklerRadius,
+          0.2,
+          sprinkler.position.z + Math.sin(theta) * sprinklerRadius
+        ));
+      }
+      const circleGeometry = new THREE.BufferGeometry().setFromPoints(points);
         const circleMaterial = new THREE.LineBasicMaterial({ 
             color: 0x000000,
             transparent: true,
             opacity: 0.8
         });
-        const circle = new THREE.Line(circleGeometry, circleMaterial);
+      const circle = new THREE.Line(circleGeometry, circleMaterial);
         circle.position.copy(sprinkler.position);
-        scene.add(circle);
-        measurements.push(circle);
+      scene.add(circle);
+      measurements.push(circle);
 
-        // Add coverage radius label for the first sprinkler only
+      // Add coverage radius label for the first sprinkler only
         if (sprinkler === sprinklerInstances[0]) {
-          const radiusLabel = createTextSprite(`Coverage Radius: ${sprinklerRadius}m`);
-          radiusLabel.position.set(
-            sprinkler.position.x + sprinklerRadius/2,
-            1,
-            sprinkler.position.z
-          );
-          scene.add(radiusLabel);
-          measurements.push(radiusLabel);
-        }
-      });
+        const radiusLabel = createTextSprite(`Coverage Radius: ${sprinklerRadius}m`);
+        radiusLabel.position.set(
+          sprinkler.position.x + sprinklerRadius/2,
+          1,
+          sprinkler.position.z
+        );
+        scene.add(radiusLabel);
+        measurements.push(radiusLabel);
+      }
+    });
     }
 
     return measurements;
@@ -1200,7 +1200,7 @@ const FarmSimulation = () => {
             const { plantInstances, sprinklerInstances } = await createFarmElements(scene, layoutConfig);
             plantsRef.current = plantInstances;
             sprinklersRef.current = sprinklerInstances;
-            
+
             // Add metrics overlays if enabled
             let metricOverlays = [];
             if (showMetrics) {
@@ -1213,7 +1213,7 @@ const FarmSimulation = () => {
             }
 
             // Add cleanup for metric overlays
-            cleanupFunctions.push(() => {
+                cleanupFunctions.push(() => {
                 metricOverlays.forEach(overlay => {
                     if (overlay.material) {
                         if (overlay.material.map) {
