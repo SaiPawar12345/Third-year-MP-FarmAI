@@ -134,7 +134,7 @@ const Dashboard = () => {
               { name: 'simulation', icon: 'chart-line', label: 'Simulation' },
               { name: 'data', icon: 'database', label: 'Data' },
               { name: 'samplePages', icon: 'leaf', label: 'Fertilizers' },
-              { name: 'apps', icon: 'th', label: 'Apps' }
+              { name: 'apps', icon: 'th', label: 'Permaculture' }
             ].map((item) => (
               <button
                 key={item.name}
