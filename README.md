@@ -1,11 +1,18 @@
-# Getting Started with Create React App
-
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Our Third Year Mini Project which is AI based Permaculture Recommendation System
+# Authors
+Ankit Maity, Sai Pawar, Vivian Rebello, Joel Varghese
 
 ## Available Scripts
-
+# To setup
+### `git clone {URL of the project}`
 In the project directory, you can run:
 
+# Then install node modules
+### `npm install` 
+or
+### `npm i`
+
+# Then start the project on your local host
 ### `npm start`
 
 Runs the app in the development mode.\
